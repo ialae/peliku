@@ -1,0 +1,126 @@
+/* ============================================================
+   Layout — ReelForge
+   Page background, container, grid, header, main, toast zone
+   DESIGN.md §4
+   ============================================================ */
+
+/* ── Page background ── */
+html,
+body {
+    background-color: var(--color-surface-bg);
+}
+
+/* ── Container ── */
+.container {
+    width: 100%;
+    max-width: var(--container-max-width);
+    margin-inline: auto;
+    padding-inline: var(--padding-mobile);
+}
+
+@media (min-width: 1024px) {
+    .container {
+        padding-inline: var(--padding-desktop);
+    }
+}
+
+/* ── Site header ── */
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    height: var(--header-height);
+    background-color: var(--color-neutral-900);
+    border-bottom: 1px solid var(--color-neutral-700);
+}
+
+.site-header__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    max-width: var(--container-max-width);
+    margin-inline: auto;
+    padding-inline: var(--padding-mobile);
+}
+
+@media (min-width: 1024px) {
+    .site-header__inner {
+        padding-inline: var(--padding-desktop);
+    }
+}
+
+.site-header__logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-heading);
+    font-size: var(--text-xl);
+    font-weight: var(--font-bold);
+    color: var(--color-text-primary);
+    transition: color var(--duration-fast) var(--ease-default);
+}
+
+.site-header__logo:hover {
+    color: var(--color-primary-400);
+}
+
+.site-header__logo-icon {
+    color: var(--color-primary-500);
+    font-size: 28px;
+}
+
+.site-header__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+/* ── Main content ── */
+.main-content {
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-16);
+}
+
+/* ── Toast container ── */
+.toast-container {
+    position: fixed;
+    bottom: var(--space-6);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: var(--z-toast);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    pointer-events: none;
+}
+
+.toast-container > * {
+    pointer-events: auto;
+}
+
+/* ── Grid system ── */
+.grid {
+    display: grid;
+    gap: var(--gutter-mobile);
+    grid-template-columns: repeat(4, 1fr);
+}
+
+@media (min-width: 768px) {
+    .grid {
+        gap: var(--gutter-desktop);
+        grid-template-columns: repeat(8, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .grid {
+        grid-template-columns: repeat(12, 1fr);
+    }
+}
+
+/* ── Utility: full-width column spans ── */
+.col-full {
+    grid-column: 1 / -1;
+}
