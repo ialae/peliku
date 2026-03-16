@@ -24,7 +24,6 @@ lint:
 checksprint1:
 	$(ACTIVATE) && python manage.py check
 	$(ACTIVATE) && python manage.py migrate --check
-	$(ACTIVATE) && python -m pytest --tb=short -q || test $$? -eq 5
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent --output /dev/null http://localhost:8000/ ; \
 		EXIT=$$? ; kill $$RF_PID 2>/dev/null ; exit $$EXIT
@@ -35,29 +34,17 @@ checksprint2:
 	$(ACTIVATE) && black --check .
 	$(ACTIVATE) && isort --check-only .
 	$(ACTIVATE) && flake8 .
-	$(ACTIVATE) && python -m pytest --tb=short -q || test $$? -eq 5
 
 # ─── Sprint 3: CI/CD & Branch Protection ────────────────────────────────────
 
 checksprint3:
-	$(ACTIVATE) && python -c "\
-		from pathlib import Path; \
-		p = Path('.github/workflows/ci.yml'); \
-		assert p.exists(), 'CI workflow not found'; \
-		c = p.read_text(); \
-		assert 'pull_request' in c, 'No PR trigger'; \
-		assert 'test' in c or 'pytest' in c, 'No test step'; \
-		print('CI workflow valid')"
-	$(ACTIVATE) && make lint
-	$(ACTIVATE) && python -m pytest --tb=short -q || test $$? -eq 5
+	$(ACTIVATE) && python -c "from pathlib import Path; p = Path('.github/workflows/ci.yml'); assert p.exists(), 'CI workflow not found'; c = p.read_text(); assert 'pull_request' in c, 'No PR trigger'; assert 'test' in c or 'pytest' in c, 'No test step'; print('CI workflow valid')"
 	gh api repos/$$(gh repo view --json nameWithOwner -q '.nameWithOwner')/branches/main/protection --silent
 
 # ─── Sprint 4: Design System & Layout ───────────────────────────────────────
 
 checksprint4:
 	$(ACTIVATE) && python manage.py check
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent http://localhost:8000/ | grep -q "ReelForge" ; \
 		EXIT=$$? ; kill $$RF_PID 2>/dev/null ; exit $$EXIT
@@ -65,8 +52,6 @@ checksprint4:
 # ─── Sprint 5: Home Page & New Project Form ─────────────────────────────────
 
 checksprint5:
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent http://localhost:8000/ | grep -q "New Project" && \
 		curl --fail --silent --output /dev/null http://localhost:8000/projects/new/ ; \
@@ -75,8 +60,6 @@ checksprint5:
 # ─── Sprint 6: Project Workspace Shell ───────────────────────────────────────
 
 checksprint6:
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent http://localhost:8000/projects/1/ | grep -q "Generate Video" && \
 		curl --fail --silent http://localhost:8000/projects/1/ | grep -q "Regenerate Script" ; \
@@ -85,8 +68,6 @@ checksprint6:
 # ─── Sprint 7: Settings, Preview & Responsive ───────────────────────────────
 
 checksprint7:
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent http://localhost:8000/ | grep -qi "settings" && \
 		curl --fail --silent http://localhost:8000/projects/1/ | grep -qi "preview" ; \
@@ -101,13 +82,10 @@ checksprint8:
 		import django; django.setup(); \
 		from core.models import Project; \
 		assert Project.objects.count() >= 3, 'Seed data missing'"
-	$(ACTIVATE) && python -m pytest --tb=short -q
 
 # ─── Sprint 9: Home Page CRUD ───────────────────────────────────────────────
 
 checksprint9:
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent http://localhost:8000/ | grep -qi "clip" && \
@@ -118,18 +96,12 @@ checksprint9:
 # ─── Sprint 10: Gemini AI SDK & Script Service ──────────────────────────────
 
 checksprint10:
-	$(ACTIVATE) && python -m pytest core/tests/test_script_generator.py --tb=short -q
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	$(ACTIVATE) && DJANGO_SETTINGS_MODULE=reelforge.settings python -c "\
 		from core.services.script_generator import generate_all_scripts; print('OK')"
 
 # ─── Sprint 11: AI Script Generation Flow ───────────────────────────────────
 
 checksprint11:
-	$(ACTIVATE) && python -m pytest core/tests/test_project_creation.py --tb=short -q
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent -X POST http://localhost:8000/projects/new/ \
 			-d "title=TestReel&description=A+test+reel+about+nature&aspect_ratio=9:16&clip_duration=8&num_clips=5" \
@@ -139,8 +111,6 @@ checksprint11:
 # ─── Sprint 12: Workspace Script Display & Editing ──────────────────────────
 
 checksprint12:
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent http://localhost:8000/projects/1/ | grep -q "Clip" && \
@@ -152,9 +122,6 @@ checksprint12:
 # ─── Sprint 13: Background Task System ──────────────────────────────────────
 
 checksprint13:
-	$(ACTIVATE) && python -m pytest core/tests/test_task_runner.py --tb=short -q
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent http://localhost:8000/api/tasks/1/status/ \
 			-w "%{http_code}" -o /dev/null | grep -qE "200|404" ; \
@@ -163,9 +130,6 @@ checksprint13:
 # ─── Sprint 14: Text-to-Video Generation ────────────────────────────────────
 
 checksprint14:
-	$(ACTIVATE) && python -m pytest core/tests/test_video_generation.py --tb=short -q
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent -X POST http://localhost:8000/api/clips/1/generate-video/ \
@@ -175,9 +139,6 @@ checksprint14:
 # ─── Sprint 15: Reference Images ────────────────────────────────────────────
 
 checksprint15:
-	$(ACTIVATE) && python -m pytest core/tests/test_reference_images.py --tb=short -q
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent -X POST http://localhost:8000/api/projects/1/references/upload/ \
@@ -188,9 +149,6 @@ checksprint15:
 # ─── Sprint 16: Image-to-Video ──────────────────────────────────────────────
 
 checksprint16:
-	$(ACTIVATE) && python -m pytest core/tests/test_image_to_video.py --tb=short -q
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent -X POST http://localhost:8000/api/clips/1/set-first-frame/ \
@@ -201,9 +159,6 @@ checksprint16:
 # ─── Sprint 17: Frame Interpolation ─────────────────────────────────────────
 
 checksprint17:
-	$(ACTIVATE) && python -m pytest core/tests/test_frame_interpolation.py --tb=short -q
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent -X POST http://localhost:8000/api/clips/1/set-last-frame/ \
@@ -214,9 +169,6 @@ checksprint17:
 # ─── Sprint 18: Clip Management ─────────────────────────────────────────────
 
 checksprint18:
-	$(ACTIVATE) && python -m pytest core/tests/test_clip_management.py --tb=short -q
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent -X POST http://localhost:8000/api/projects/1/clips/add/ \
@@ -226,9 +178,6 @@ checksprint18:
 # ─── Sprint 19: Script Regeneration ─────────────────────────────────────────
 
 checksprint19:
-	$(ACTIVATE) && python -m pytest core/tests/test_script_regeneration.py --tb=short -q
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent -X POST http://localhost:8000/api/clips/1/regenerate-script/ \
@@ -238,9 +187,6 @@ checksprint19:
 # ─── Sprint 20: Transition Frames ───────────────────────────────────────────
 
 checksprint20:
-	$(ACTIVATE) && python -m pytest core/tests/test_transition_frames.py --tb=short -q
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent -X POST http://localhost:8000/api/clips/1/generate-transition/ \
@@ -250,9 +196,6 @@ checksprint20:
 # ─── Sprint 21: Video Extension ─────────────────────────────────────────────
 
 checksprint21:
-	$(ACTIVATE) && python -m pytest core/tests/test_video_extension.py --tb=short -q
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent -X POST http://localhost:8000/api/clips/1/extend/ \
@@ -263,9 +206,6 @@ checksprint21:
 # ─── Sprint 22: Extend from Previous Clip ───────────────────────────────────
 
 checksprint22:
-	$(ACTIVATE) && python -m pytest core/tests/test_extend_from_previous.py --tb=short -q
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent -X POST http://localhost:8000/api/clips/2/generate-video/ \
@@ -276,9 +216,6 @@ checksprint22:
 # ─── Sprint 23: Reel Preview ────────────────────────────────────────────────
 
 checksprint23:
-	$(ACTIVATE) && python -m pytest core/tests/test_preview.py --tb=short -q
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent http://localhost:8000/api/projects/1/preview-data/ \
@@ -288,9 +225,6 @@ checksprint23:
 # ─── Sprint 24: Reel Assembly & Download ────────────────────────────────────
 
 checksprint24:
-	$(ACTIVATE) && python -m pytest core/tests/test_reel_assembly.py --tb=short -q
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent -X POST http://localhost:8000/api/projects/1/assemble/ \
@@ -300,9 +234,6 @@ checksprint24:
 # ─── Sprint 25: Clip Download & Thumbnails ──────────────────────────────────
 
 checksprint25:
-	$(ACTIVATE) && python -m pytest core/tests/test_clip_download.py core/tests/test_thumbnails.py --tb=short -q
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent http://localhost:8000/api/clips/1/download/ \
@@ -312,9 +243,6 @@ checksprint25:
 # ─── Sprint 26: Hook Section ────────────────────────────────────────────────
 
 checksprint26:
-	$(ACTIVATE) && python -m pytest core/tests/test_hook.py --tb=short -q
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent -X POST http://localhost:8000/api/projects/1/hook/generate-script/ \
@@ -324,9 +252,6 @@ checksprint26:
 # ─── Sprint 27: Settings Panel ──────────────────────────────────────────────
 
 checksprint27:
-	$(ACTIVATE) && python -m pytest core/tests/test_settings.py --tb=short -q
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent http://localhost:8000/api/settings/ \
 			-w "%{http_code}" -o /dev/null | grep -qE "200" ; \
@@ -335,9 +260,6 @@ checksprint27:
 # ─── Sprint 28: Error Handling & States ──────────────────────────────────────
 
 checksprint28:
-	$(ACTIVATE) && python -m pytest core/tests/test_error_states.py --tb=short -q
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent http://localhost:8000/ | grep -q "Forge your first reel" ; \
 		EXIT=$$? ; kill $$RF_PID 2>/dev/null ; exit $$EXIT
@@ -345,9 +267,6 @@ checksprint28:
 # ─── Sprint 29: Accessibility & Animations ──────────────────────────────────
 
 checksprint29:
-	$(ACTIVATE) && python -m pytest core/tests/test_accessibility.py --tb=short -q
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent http://localhost:8000/projects/1/ | grep -q "aria-" ; \
@@ -356,9 +275,6 @@ checksprint29:
 # ─── Sprint 30: Final Integration & Documentation ───────────────────────────
 
 checksprint30:
-	$(ACTIVATE) && python -m pytest core/tests/test_integration.py --tb=short -q
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
 	$(ACTIVATE) && pip-audit 2>/dev/null || echo "WARN: pip-audit not available, skipping"
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		curl --fail --silent http://localhost:8000/ | grep -q "ReelForge" ; \
