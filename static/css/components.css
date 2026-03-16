@@ -352,3 +352,218 @@
     outline: 2px solid var(--color-accent-500);
     outline-offset: 2px;
 }
+
+/* ─── Select (form-select) ─────────────────────────────────── */
+
+.form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%2394A3B8' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right var(--space-3) center;
+    padding-right: var(--space-10);
+    cursor: pointer;
+}
+
+/* ─── Toggle Group (radio cards) ───────────────────────────── */
+
+.toggle-group {
+    display: flex;
+    gap: var(--space-3);
+}
+
+.toggle-option {
+    flex: 1;
+    cursor: pointer;
+}
+
+.toggle-option__input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-option__label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    background-color: var(--color-neutral-800);
+    border: var(--border-width) solid var(--color-neutral-600);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--color-neutral-300);
+    transition:
+        background-color var(--duration-fast) var(--ease-default),
+        border-color var(--duration-fast) var(--ease-default),
+        color var(--duration-fast) var(--ease-default);
+}
+
+.toggle-option__label:hover {
+    background-color: var(--color-neutral-700);
+    color: var(--color-neutral-50);
+}
+
+.toggle-option__input:checked + .toggle-option__label {
+    background-color: var(--color-primary-900);
+    border-color: var(--color-primary-500);
+    color: var(--color-neutral-50);
+}
+
+.toggle-option__input:focus-visible + .toggle-option__label {
+    outline: 2px solid var(--color-accent-500);
+    outline-offset: 2px;
+}
+
+/* ─── Character Count ──────────────────────────────────────── */
+
+.form-helper--counter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.char-count {
+    font-size: var(--text-xs);
+    color: var(--color-neutral-400);
+    font-variant-numeric: tabular-nums;
+}
+
+.char-count--warning {
+    color: var(--color-warning);
+}
+
+.char-count--limit {
+    color: var(--color-error);
+}
+
+/* ─── Form Label Optional Tag ──────────────────────────────── */
+
+.form-label__optional {
+    font-weight: var(--font-regular);
+    color: var(--color-neutral-400);
+}
+
+/* ─── Textarea Short Variant ───────────────────────────────── */
+
+.form-textarea--short {
+    min-height: 80px;
+}
+
+/* ─── Empty State ──────────────────────────────────────────── */
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding-top: var(--space-20);
+    padding-bottom: var(--space-20);
+}
+
+.empty-state__illustration {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    margin-bottom: var(--space-8);
+}
+
+.empty-state__icon {
+    font-size: 64px;
+    color: var(--color-primary-400);
+    opacity: 0.6;
+}
+
+.empty-state__icon--accent {
+    font-size: 48px;
+    color: var(--color-secondary-400);
+    opacity: 0.5;
+}
+
+.empty-state__heading {
+    margin-bottom: var(--space-3);
+}
+
+.empty-state__text {
+    color: var(--color-neutral-300);
+    margin-bottom: var(--space-8);
+}
+
+.empty-state__action {
+    display: inline-flex;
+}
+
+/* ─── Search Bar ───────────────────────────────────────────── */
+
+.search-bar {
+    position: relative;
+    max-width: 360px;
+}
+
+.search-bar__icon {
+    position: absolute;
+    top: 50%;
+    left: var(--space-3);
+    transform: translateY(-50%);
+    color: var(--color-neutral-400);
+    font-size: 18px;
+    pointer-events: none;
+}
+
+.search-bar__input {
+    padding-left: var(--space-10);
+}
+
+/* ─── Project Grid Toolbar ─────────────────────────────────── */
+
+.project-grid-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-6);
+}
+
+/* ─── Project Grid ─────────────────────────────────────────── */
+
+.project-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+/* ─── Project Form Page ────────────────────────────────────── */
+
+.project-form-page {
+    display: flex;
+    justify-content: center;
+}
+
+.project-form-wrapper {
+    width: 100%;
+    max-width: 600px;
+}
+
+.project-form__title {
+    margin-bottom: var(--space-2);
+}
+
+.project-form__subtitle {
+    margin-bottom: var(--space-8);
+}
+
+.project-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+.project-form__actions {
+    padding-top: var(--space-4);
+    display: flex;
+    justify-content: center;
+}
+
+.project-form__submit {
+    width: 100%;
+    max-width: 320px;
+}
