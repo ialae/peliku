@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-ACTIVATE := source .venv/Scripts/activate
+ACTIVATE := export PATH="$$(pwd)/.venv/Scripts:$$PATH" && export VIRTUAL_ENV="$$(pwd)/.venv"
 SERVER_PID := /tmp/rf_test_server.pid
 
 .PHONY: test lint start-server stop-server checkall \

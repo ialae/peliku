@@ -123,7 +123,7 @@ Never run global `pip install` commands. Always activate `.venv` first, then use
   - Create `conftest.py` at project root with Django settings configuration for pytest
   - Create `core/tests/__init__.py` and `core/tests/test_smoke.py` with a smoke test that verifies the home page returns 200
   - Initialize Git repo: `git init`, `git remote add origin <REPO_URL>`, initial commit
-  - Create the `Makefile` at the workspace root with `SHELL := /bin/bash`, `ACTIVATE` variable, `test` target (runs pytest), and `checksprint1` target
+  - Create the `Makefile` at the workspace root with `SHELL := /bin/bash`, `ACTIVATE` variable (using PATH export instead of `source .venv/Scripts/activate` for Git Bash compatibility on Windows), `test` target (runs pytest), and `checksprint1` target
 
 - **What you should see when done**:
   - `python manage.py runserver` starts the dev server at `http://127.0.0.1:8000/`
