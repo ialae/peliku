@@ -1,0 +1,115 @@
+/* ============================================================
+   Typography — ReelForge
+   Google Fonts imports + type scale classes from DESIGN.md §3
+   ============================================================ */
+
+/* ── Google Fonts ── */
+@import url("https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;700&family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400&display=swap");
+
+/* ── Base typography ── */
+body {
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    line-height: var(--text-base-lh);
+    font-weight: var(--font-regular);
+    color: var(--color-text-primary);
+}
+
+/* ── Type scale utility classes ── */
+.text-xs {
+    font-size: var(--text-xs);
+    line-height: var(--text-xs-lh);
+}
+
+.text-sm {
+    font-size: var(--text-sm);
+    line-height: var(--text-sm-lh);
+}
+
+.text-base {
+    font-size: var(--text-base);
+    line-height: var(--text-base-lh);
+}
+
+.text-lg {
+    font-size: var(--text-lg);
+    line-height: var(--text-lg-lh);
+}
+
+.text-xl {
+    font-size: var(--text-xl);
+    line-height: var(--text-xl-lh);
+}
+
+.text-2xl {
+    font-size: var(--text-2xl);
+    line-height: var(--text-2xl-lh);
+}
+
+.text-4xl {
+    font-size: var(--text-4xl);
+    line-height: var(--text-4xl-lh);
+}
+
+/* ── Heading styles ── */
+.heading-1 {
+    font-family: var(--font-heading);
+    font-size: var(--text-4xl);
+    line-height: var(--text-4xl-lh);
+    font-weight: var(--font-bold);
+    letter-spacing: -0.025em;
+    color: var(--color-neutral-50);
+}
+
+.heading-2 {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    line-height: var(--text-2xl-lh);
+    font-weight: var(--font-bold);
+    letter-spacing: -0.025em;
+    color: var(--color-neutral-50);
+}
+
+.heading-3 {
+    font-family: var(--font-heading);
+    font-size: var(--text-xl);
+    line-height: var(--text-xl-lh);
+    font-weight: var(--font-bold);
+    color: var(--color-neutral-50);
+}
+
+/* ── Body text styles ── */
+.body-default {
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    line-height: var(--text-base-lh);
+    font-weight: var(--font-regular);
+    color: var(--color-neutral-100);
+}
+
+.body-small {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    line-height: var(--text-sm-lh);
+    font-weight: var(--font-regular);
+    color: var(--color-neutral-300);
+}
+
+/* ── Label style ── */
+.label {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    line-height: var(--text-sm-lh);
+    font-weight: var(--font-medium);
+    color: var(--color-neutral-200);
+}
+
+/* ── Monospace ── */
+.mono {
+    font-family: var(--font-mono);
+}
+
+/* ── Typography rules ── */
+.max-line-width {
+    max-width: 65ch;
+}
