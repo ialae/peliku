@@ -338,7 +338,13 @@ After all tasks are complete, run the full verification.
 
 ### 5.1 Run the Makefile Target
 
-Execute `make checksprintN` in the terminal. Watch the output.
+Execute the following in order. Watch the output of each command.
+
+1. `make checksprintN` — the sprint-specific unique assertions (HTTP probes, env/model checks).
+2. `make lint` — verifies code formatting and style.
+3. `make test` — runs the full test suite.
+
+All three must exit with code 0.
 
 ### 5.2 If Verification Passes
 
@@ -351,8 +357,8 @@ Do not give up. Diagnose and fix:
 1. **Read the error output carefully.** Identify which specific command failed and why.
 2. **Diagnose the root cause.** Is it a bug in your code, a missing dependency, a configuration issue, or a flawed verification command?
 3. **Fix the issue.** Edit the relevant files, run the relevant commands, or correct the verification command if it is the one at fault.
-4. **Re-run `make checksprintN`.** Repeat until all commands pass.
-5. **Maximum 5 retry cycles.** If after 5 attempts the verification still fails, stop and report the issue to the user with full diagnostic information (what failed, what you tried, what you think the root cause is). Instruct the developer: _"Fix the issue manually on the `sprint/N` branch, commit the fix, then re-run `@sprintexecutor N` to continue."_
+4. **Re-run all three commands** (`make checksprintN`, `make lint`, `make test`). Repeat until all pass.
+5. **Maximum 5 retry cycles.** If after 5 attempts verification still fails, stop and report the issue to the user with full diagnostic information. Instruct the developer: _"Fix the issue manually on the `sprint/N` branch, commit the fix, then re-run `@sprintexecutor N` to continue."_
 
 ### 5.4 Regression-Test Previous Sprints
 
@@ -360,13 +366,15 @@ Do not give up. Diagnose and fix:
 
 After the current sprint's verification passes, confirm that no previous sprint was broken by the new code:
 
-1. Run `make checksprint1` through `make checksprint[N-1]` in order on the current `sprint/N` branch.
-2. If **all pass**: proceed to Step 6.
-3. If **any fail**: you introduced a regression. Diagnose and fix the issue:
+1. Run `make lint` once.
+2. Run `make test` once — this is the primary regression check for all previously written tests.
+3. Run `make checksprint1` through `make checksprint[N-1]` in order. Each target now contains only the unique HTTP/env assertions for that sprint, so this is fast.
+4. If **all pass**: proceed to Step 6.
+5. If **any fail**: you introduced a regression. Diagnose and fix:
    - Read the error output to identify which previous sprint's check broke.
    - Determine whether the regression is in your code or in a flawed verification command.
    - Fix the root cause (implementation fix or verification command fix).
-   - Re-run the full set: `make checksprint1` through `make checksprintN`.
+   - Re-run all steps (lint, test, per-sprint checks).
    - Maximum 3 retry cycles. If the regression persists, stop and report: _"Sprint [N] introduces a regression in Sprint [K]'s verification. [Details of what failed and what was tried]."_
 
 Catching regressions here — before the reviewer — prevents wasted review cycles and gives faster feedback.
@@ -386,9 +394,10 @@ Look for testing skills in folder `.github/skills/`. If there are relevant testi
 After writing or updating tests, re-run the full verification to ensure the new tests pass and nothing was broken:
 
 1. Run `make checksprintN` again.
-2. Run the project's full test suite (e.g., `make test`, `npm test`, `pytest`) to confirm all tests — old and new — pass.
-3. If any test fails, fix the issue (in the test or the implementation) and re-run until everything passes.
-4. Only proceed to Step 8 after both the sprint verification and the full test suite pass.
+2. Run `make lint` to confirm no formatting issues were introduced.
+3. Run `make test` to confirm all tests — old and new — pass.
+4. If any command fails, fix the issue (in the test or the implementation) and re-run until everything passes.
+5. Only proceed to Step 8 after all three commands pass.
 
 ---
 
