@@ -1,6 +1,7 @@
 """Smoke tests for the core app."""
 
 import pytest
+
 from django.test import Client
 
 

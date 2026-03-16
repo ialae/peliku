@@ -208,7 +208,7 @@ Since the environment is dark mode, shadows are subtle and are often accented by
 - Icon color rules: Inherit text color, or use Primary 400 for accents.
 - Pairing rule: Icons must be paired with labels (e.g., "Generate Video" always shows text alongside the magic wand icon).
 
-### 6.2 Illustration Style 
+### 6.2 Illustration Style
 
 - Flat, vibrant dark-mode optimized vector illustrations. Abstract, slightly geometric representations of camera lenses, magic sparkles, and clapperboards with overlapping translucent purple and pink shapes.
 - Focus: Empty states (Dashboard, New Project), and loading assemblies ("Assembling your reel...").
@@ -481,7 +481,7 @@ Since the environment is dark mode, shadows are subtle and are often accented by
 
 **5. Hook Generation (Pinned Banner)**
 - Components: Full width banner card tinted with Secondary Pink (#EC4899) borders to differentiate from standard purple flows. Same internal split panel as a clip card.
-- Interaction: Toggle switch to prepend onto final reel. 
+- Interaction: Toggle switch to prepend onto final reel.
 
 **6. Final Assembly & Download**
 - Components: Primary disabled button in Top Nav that turns Active. Progress Modal overlay.
