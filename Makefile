@@ -78,10 +78,7 @@ checksprint7:
 checksprint8:
 	$(ACTIVATE) && python manage.py migrate --check
 	$(ACTIVATE) && python manage.py seed_dev_data
-	$(ACTIVATE) && DJANGO_SETTINGS_MODULE=peliku.settings python -c "\
-		import django; django.setup(); \
-		from core.models import Project; \
-		assert Project.objects.count() >= 3, 'Seed data missing'"
+	$(ACTIVATE) && DJANGO_SETTINGS_MODULE=peliku.settings python -c "import django; django.setup(); from core.models import Project; assert Project.objects.count() >= 3, 'Seed data missing'"
 
 # ─── Sprint 9: Home Page CRUD ───────────────────────────────────────────────
 
