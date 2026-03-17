@@ -1,0 +1,301 @@
+/* ============================================================
+   Workspace — ReelForge
+   Project Workspace layout: header, reference panel, clip cards,
+   connector lines.
+   DESIGN.md §7.3, §7.6, §7.7, §12.3
+   ============================================================ */
+
+/* ─── Workspace section spacing ───────────────────────────── */
+
+.workspace {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+}
+
+/* ─── Compact Header Bar ──────────────────────────────────── */
+
+.workspace-header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.workspace-header__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.workspace-header__title {
+    margin: 0;
+}
+
+.workspace-header__badges {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.workspace-header__desc {
+    max-width: 65ch;
+}
+
+.workspace-header__style {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--color-primary-300);
+}
+
+/* ─── Badge ───────────────────────────────────────────────── */
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-1) var(--space-3);
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    color: var(--color-neutral-200);
+    background-color: var(--color-neutral-700);
+    border-radius: var(--radius-full);
+    white-space: nowrap;
+}
+
+.badge--small {
+    padding: var(--space-1) var(--space-2);
+    font-size: 0.625rem;
+}
+
+/* ─── Reference Images Panel ──────────────────────────────── */
+
+.ref-panel {
+    background-color: var(--color-surface-card);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+
+.ref-panel__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: var(--space-4) var(--space-6);
+    background: none;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-default);
+}
+
+.ref-panel__toggle:hover {
+    background-color: var(--color-surface-hover);
+}
+
+.ref-panel__toggle-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-base);
+    font-weight: var(--font-medium);
+}
+
+.ref-panel__caret {
+    font-size: 20px;
+    transition: transform var(--duration-normal) var(--ease-default);
+}
+
+.ref-panel__toggle[aria-expanded="true"] .ref-panel__caret {
+    transform: rotate(180deg);
+}
+
+.ref-panel__body {
+    padding: 0 var(--space-6) var(--space-6);
+}
+
+.ref-panel__hint {
+    margin-bottom: var(--space-4);
+    color: var(--color-text-secondary);
+}
+
+.ref-panel__slots {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-4);
+}
+
+/* ─── Reference Slot ──────────────────────────────────────── */
+
+.ref-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.ref-slot__preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border: var(--border-width) dashed var(--color-neutral-600);
+    border-radius: var(--radius-lg);
+    background-color: var(--color-neutral-800);
+    transition: border-color var(--duration-fast) var(--ease-default);
+    cursor: pointer;
+}
+
+.ref-slot__preview:hover {
+    border-color: var(--color-primary-400);
+}
+
+.ref-slot__icon {
+    font-size: 32px;
+    color: var(--color-neutral-500);
+}
+
+.ref-slot__label {
+    color: var(--color-text-secondary);
+    text-align: center;
+}
+
+/* ─── Clip List ───────────────────────────────────────────── */
+
+.clip-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+/* ─── Clip Connector ──────────────────────────────────────── */
+
+.clip-connector {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) 0;
+}
+
+.clip-connector__line {
+    flex: 1;
+    height: 2px;
+    background-color: var(--color-accent-500);
+}
+
+.clip-connector__btn {
+    flex-shrink: 0;
+    color: var(--color-accent-400);
+    font-size: var(--text-xs);
+    white-space: nowrap;
+}
+
+.clip-connector__btn:hover:not(:disabled) {
+    color: var(--color-accent-300);
+}
+
+/* ─── Clip Card ───────────────────────────────────────────── */
+
+.clip-card {
+    display: flex;
+    gap: var(--space-4);
+    position: relative;
+}
+
+.clip-card__drag {
+    display: flex;
+    align-items: center;
+    color: var(--color-neutral-500);
+    font-size: 24px;
+    cursor: grab;
+    padding: var(--space-1);
+    flex-shrink: 0;
+    transition: color var(--duration-fast) var(--ease-default);
+}
+
+.clip-card__drag:hover {
+    color: var(--color-accent-400);
+}
+
+.clip-card__content {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-6);
+    min-width: 0;
+}
+
+/* ─── Left Panel — Script ─────────────────────────────────── */
+
+.clip-card__left {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.clip-card__heading {
+    margin: 0;
+}
+
+.clip-card__script {
+    max-width: 65ch;
+    min-height: 160px;
+    resize: vertical;
+}
+
+/* ─── Right Panel — Video ─────────────────────────────────── */
+
+.clip-card__right {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.clip-card__video-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 9 / 16;
+    max-height: 320px;
+    border: var(--border-width) dashed var(--color-neutral-600);
+    border-radius: var(--radius-lg);
+    background-color: var(--color-neutral-800);
+    transition: border-color var(--duration-fast) var(--ease-default);
+}
+
+.clip-card__video-placeholder:hover {
+    border-color: var(--color-primary-400);
+}
+
+.clip-card__wand-icon {
+    font-size: 48px;
+    color: var(--color-primary-400);
+}
+
+.clip-card__generate-btn {
+    width: 100%;
+}
+
+/* ─── Responsive: stack clip panels on mobile ─────────────── */
+
+@media (max-width: 767px) {
+    .clip-card {
+        flex-direction: column;
+    }
+
+    .clip-card__drag {
+        position: absolute;
+        top: var(--space-4);
+        right: var(--space-4);
+    }
+
+    .clip-card__content {
+        grid-template-columns: 1fr;
+    }
+
+    .ref-panel__slots {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
