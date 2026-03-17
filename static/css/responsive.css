@@ -1,0 +1,129 @@
+/* ============================================================
+   Responsive — Peliku
+   Breakpoint adjustments for mobile, tablet, desktop, wide.
+   DESIGN.md §4.2, §4.3, §10
+   ============================================================ */
+
+/* ── Mobile (320px+): base styles ─────────────────────────── */
+
+.site-header__actions {
+    gap: var(--space-2);
+}
+
+/* Hide button text on small screens, keep icon */
+@media (max-width: 767px) {
+    .site-header__actions .btn--ghost .btn-text,
+    .site-header__actions .btn--primary .btn-text {
+        display: none;
+    }
+
+    /* Stack workspace header badges below title */
+    .workspace-header__top {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    /* Clip panels: single column, script on top, video below */
+    .clip-card__content {
+        grid-template-columns: 1fr;
+    }
+
+    /* Drag handle moves to top-right on mobile */
+    .clip-card {
+        flex-direction: column;
+    }
+
+    .clip-card__drag {
+        position: absolute;
+        top: var(--space-4);
+        right: var(--space-4);
+    }
+
+    /* Reference panel slots: 2 columns on mobile */
+    .ref-panel__slots {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Settings panel full-width on mobile */
+    .settings-panel {
+        width: 100%;
+    }
+
+    /* Project form tighter padding */
+    .project-form-wrapper {
+        padding-inline: 0;
+    }
+
+    /* Home page grid: single column */
+    .project-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Container padding for mobile */
+    .container {
+        padding-inline: var(--padding-mobile);
+    }
+
+    /* Clip connector simplify */
+    .clip-connector {
+        padding: var(--space-2) 0;
+    }
+
+    .clip-connector__btn {
+        font-size: 0.625rem;
+    }
+}
+
+/* ── Tablet (768px+) ──────────────────────────────────────── */
+
+@media (min-width: 768px) {
+    .container {
+        padding-inline: var(--gutter-desktop);
+    }
+
+    .project-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--gutter-desktop);
+    }
+
+    .ref-panel__slots {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .clip-card__content {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .clip-card {
+        flex-direction: row;
+    }
+
+    .clip-card__drag {
+        position: static;
+    }
+}
+
+/* ── Desktop (1024px+) ────────────────────────────────────── */
+
+@media (min-width: 1024px) {
+    .container {
+        padding-inline: var(--padding-desktop);
+    }
+
+    .project-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .site-header__actions {
+        gap: var(--space-4);
+    }
+}
+
+/* ── Wide (1440px+) ───────────────────────────────────────── */
+
+@media (min-width: 1440px) {
+    .container {
+        max-width: var(--container-max-width);
+        margin-inline: auto;
+    }
+}
