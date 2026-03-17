@@ -9,4 +9,9 @@ app_name = "core"
 urlpatterns = [
     path("", views.home, name="home"),
     path("projects/new/", views.project_form, name="project_form"),
+    path(
+        "projects/<int:project_id>/",
+        views.workspace,
+        name="workspace",
+    ),
 ]
