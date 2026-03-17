@@ -6,5 +6,5 @@ target-version = ["py312"]
 profile = "black"
 line_length = 88
 known_django = ["django"]
-known_first_party = ["core", "reelforge"]
+known_first_party = ["core", "peliku"]
 sections = ["FUTURE", "STDLIB", "THIRDPARTY", "DJANGO", "FIRSTPARTY", "LOCALFOLDER"]

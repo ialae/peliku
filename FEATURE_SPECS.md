@@ -1,8 +1,8 @@
-# Feature Specifications — ReelForge
+# Feature Specifications — Peliku
 
 ## 1. Product Vision
 
-ReelForge is a personal web-based tool for creating viral short-form video reels ready to post on Instagram and TikTok. Today, producing a cohesive 60-second reel requires juggling multiple AI tools, manually writing prompts that stay visually consistent across clips, and stitching everything together — a tedious, error-prone process that breaks creative flow. ReelForge eliminates that friction: describe your reel idea in plain language, and AI instantly writes seven detailed, visually coherent clip scripts that share a unified narrative thread, consistent characters, environment, color palette, and mood. Then generate, preview, refine, and assemble every clip — all in one place — and download the final reel as a single MP4 file.
+Peliku is a personal web-based tool for creating viral short-form video reels ready to post on Instagram and TikTok. Today, producing a cohesive 60-second reel requires juggling multiple AI tools, manually writing prompts that stay visually consistent across clips, and stitching everything together — a tedious, error-prone process that breaks creative flow. Peliku eliminates that friction: describe your reel idea in plain language, and AI instantly writes seven detailed, visually coherent clip scripts that share a unified narrative thread, consistent characters, environment, color palette, and mood. Then generate, preview, refine, and assemble every clip — all in one place — and download the final reel as a single MP4 file.
 
 ---
 
@@ -19,8 +19,8 @@ ReelForge is a personal web-based tool for creating viral short-form video reels
 ### 2.2 Anti-Users
 
 - Teams or agencies looking for multi-user collaboration, approval workflows, or shared asset libraries — this is a personal power tool, not a team platform
-- Users who need direct publishing to Instagram or TikTok from within the tool — ReelForge produces a downloadable file; publishing happens separately
-- Users looking for a fully automated "one-click reel" generator with no creative control — ReelForge is designed for creators who want to steer every clip
+- Users who need direct publishing to Instagram or TikTok from within the tool — Peliku produces a downloadable file; publishing happens separately
+- Users looking for a fully automated "one-click reel" generator with no creative control — Peliku is designed for creators who want to steer every clip
 
 ---
 
@@ -271,7 +271,7 @@ Once the reel is complete (all clips have generated videos and the user has prev
 
 - The user can close the browser tab at any time — all project data is saved automatically as they work
 - There is no account to cancel or subscription to manage
-- Important: generated videos are stored temporarily by the AI video service and expire after 2 days. ReelForge downloads and saves video files to the server as soon as they are generated to prevent expiration. The user should download their final reel promptly.
+- Important: generated videos are stored temporarily by the AI video service and expire after 2 days. Peliku downloads and saves video files to the server as soon as they are generated to prevent expiration. The user should download their final reel promptly.
 - The user can delete individual projects or all projects from the Home page. Deletion is permanent.
 
 ---
@@ -607,7 +607,7 @@ Once the reel is complete (all clips have generated videos and the user has prev
 ### 6.3 Navigation Structure
 
 - **Top Navigation Bar** (always visible):
-  - Left: app name/logo ("ReelForge"), which is also a link back to the Home page
+  - Left: app name/logo ("Peliku"), which is also a link back to the Home page
   - Right: Settings gear icon
 - **Home Page**: grid of project cards + "New Project" button
 - **Project Workspace**: accessed by clicking a project card; the top nav bar remains, with a back arrow to return to the Home page
@@ -789,8 +789,8 @@ Not applicable. This is a free, personal utility with no monetization plans.
 - The product is successful when all seven clips in a reel visually feel like they belong to the same story — consistent characters, palette, and mood
 - The product is successful when the user can regenerate any individual clip without breaking the coherence of the overall reel
 - The product is successful when transition frames between clips make the reel feel like a continuous piece rather than a slideshow of disconnected clips
-- The product is successful when the user chooses ReelForge over manually juggling separate AI tools and a video editor for every new reel
-- The product is successful when a reel created entirely in ReelForge performs comparably (in engagement) to reels produced with traditional production tools
+- The product is successful when the user chooses Peliku over manually juggling separate AI tools and a video editor for every new reel
+- The product is successful when a reel created entirely in Peliku performs comparably (in engagement) to reels produced with traditional production tools
 
 ---
 

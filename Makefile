@@ -46,7 +46,7 @@ checksprint3:
 checksprint4:
 	$(ACTIVATE) && python manage.py check
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
-		curl --fail --silent http://localhost:8000/ | grep -q "ReelForge" ; \
+		curl --fail --silent http://localhost:8000/ | grep -q "Peliku" ; \
 		EXIT=$$? ; kill $$RF_PID 2>/dev/null ; exit $$EXIT
 
 # ─── Sprint 5: Home Page & New Project Form ─────────────────────────────────
@@ -78,7 +78,7 @@ checksprint7:
 checksprint8:
 	$(ACTIVATE) && python manage.py migrate --check
 	$(ACTIVATE) && python manage.py seed_dev_data
-	$(ACTIVATE) && DJANGO_SETTINGS_MODULE=reelforge.settings python -c "\
+	$(ACTIVATE) && DJANGO_SETTINGS_MODULE=peliku.settings python -c "\
 		import django; django.setup(); \
 		from core.models import Project; \
 		assert Project.objects.count() >= 3, 'Seed data missing'"
@@ -96,7 +96,7 @@ checksprint9:
 # ─── Sprint 10: Gemini AI SDK & Script Service ──────────────────────────────
 
 checksprint10:
-	$(ACTIVATE) && DJANGO_SETTINGS_MODULE=reelforge.settings python -c "\
+	$(ACTIVATE) && DJANGO_SETTINGS_MODULE=peliku.settings python -c "\
 		from core.services.script_generator import generate_all_scripts; print('OK')"
 
 # ─── Sprint 11: AI Script Generation Flow ───────────────────────────────────
@@ -277,7 +277,7 @@ checksprint29:
 checksprint30:
 	$(ACTIVATE) && pip-audit 2>/dev/null || echo "WARN: pip-audit not available, skipping"
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
-		curl --fail --silent http://localhost:8000/ | grep -q "ReelForge" ; \
+		curl --fail --silent http://localhost:8000/ | grep -q "Peliku" ; \
 		EXIT=$$? ; kill $$RF_PID 2>/dev/null ; exit $$EXIT
 
 # ─── Aggregate Target ───────────────────────────────────────────────────────

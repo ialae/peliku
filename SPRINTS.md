@@ -1,4 +1,4 @@
-# Sprint Plan — ReelForge
+# Sprint Plan — Peliku
 
 > Generated from: FEATURE_SPECS.md, STACK.md, DESIGN.md
 > Date: March 15, 2026
@@ -20,7 +20,7 @@
 - The full test suite is run via `make test` from the project root.
 - Every command must exit with code 0 for the sprint to pass.
 - `make checkall` runs all verifications in order and stops at the first failure.
-- **Note on deployment**: Per STACK.md, ReelForge is a development-only personal tool with no cloud deployment. There are no `checkdeployN` targets. All verification is local.
+- **Note on deployment**: Per STACK.md, Peliku is a development-only personal tool with no cloud deployment. There are no `checkdeployN` targets. All verification is local.
 
 ### Branching & Review Workflow
 
@@ -106,17 +106,17 @@ Never run global `pip install` commands. Always activate `.venv` first, then use
   - Read FEATURE_SPECS.md completely before implementing this sprint
   - Create virtual environment: `python -m venv .venv`
   - Activate `.venv` and install dependencies: `python -m pip install django==5.1.7 python-decouple django-debug-toolbar pytest pytest-django`
-  - Create Django project in the workspace root: `django-admin startproject reelforge .`
+  - Create Django project in the workspace root: `django-admin startproject peliku .`
   - Create the main app: `python manage.py startapp core`
   - Create `.env` with `SECRET_KEY`, `DEBUG=True`, `GEMINI_API_KEY=your-key-here`, `ALLOWED_HOSTS=localhost,127.0.0.1`
   - Create `.env.example` documenting all required configuration variables (same keys, placeholder values)
-  - Update `reelforge/settings.py`: use `python-decouple` for env vars, register `core` app, configure `django-debug-toolbar`, set `TEMPLATES` dirs to include a root `templates/` folder, configure `STATIC_URL`, `STATICFILES_DIRS`, `MEDIA_URL`, `MEDIA_ROOT`, set up Python `logging` to file (`logs/reelforge.log`) and stdout
+  - Update `peliku/settings.py`: use `python-decouple` for env vars, register `core` app, configure `django-debug-toolbar`, set `TEMPLATES` dirs to include a root `templates/` folder, configure `STATIC_URL`, `STATICFILES_DIRS`, `MEDIA_URL`, `MEDIA_ROOT`, set up Python `logging` to file (`logs/peliku.log`) and stdout
   - Create directories: `templates/`, `static/css/`, `static/js/`, `static/images/`, `media/videos/`, `media/images/`, `media/reels/`, `logs/`
   - Create `templates/base.html` with a minimal HTML5 document (empty body, will be styled in Sprint 4)
   - Create `core/urls.py` with a single route `/` pointing to a home view
   - Create `core/views.py` with a `home` view that renders `templates/core/home.html`
-  - Create `templates/core/home.html` extending `base.html` with placeholder text "ReelForge — Home"
-  - Update `reelforge/urls.py` to include `core.urls` and serve media files in development
+  - Create `templates/core/home.html` extending `base.html` with placeholder text "Peliku — Home"
+  - Update `peliku/urls.py` to include `core.urls` and serve media files in development
   - Run `python manage.py migrate` to create initial database
   - Create `requirements.txt` with all pinned dependency versions
   - Create `.gitignore` excluding `.venv/`, `__pycache__/`, `*.pyc`, `.env`, `db.sqlite3`, `media/`, `logs/`, `*.egg-info`
@@ -127,7 +127,7 @@ Never run global `pip install` commands. Always activate `.venv` first, then use
 
 - **What you should see when done**:
   - `python manage.py runserver` starts the dev server at `http://127.0.0.1:8000/`
-  - Visiting `http://localhost:8000/` shows "ReelForge — Home"
+  - Visiting `http://localhost:8000/` shows "Peliku — Home"
   - `make test` runs the smoke test and passes
   - `make checksprint1` passes all checks
 
@@ -198,7 +198,7 @@ Never run global `pip install` commands. Always activate `.venv` first, then use
     - Require pull request reviews before merging
     - Require status checks (the CI workflow) to pass before merging
     - Disallow direct pushes to `main`
-  - Note: Per STACK.md, ReelForge has no cloud deployment. The CI pipeline validates code quality only. No deployment steps.
+  - Note: Per STACK.md, Peliku has no cloud deployment. The CI pipeline validates code quality only. No deployment steps.
   - Add `checksprint3` target to Makefile
 
 - **What you should see when done**:
@@ -237,14 +237,14 @@ Never run global `pip install` commands. Always activate `.venv` first, then use
     - Add Phosphor Icons CDN link (per DESIGN.md Section 6.1)
     - Add jQuery 3.7+ CDN `<script>` tag
     - Link all CSS files in correct order: reset, tokens, typography, layout, components, animations
-    - Build the global header nav: 72px height, Neutral 900 background, sticky; left side has "ReelForge" logo/link to home; right side has Settings gear icon (per DESIGN.md Section 7.7)
+    - Build the global header nav: 72px height, Neutral 900 background, sticky; left side has "Peliku" logo/link to home; right side has Settings gear icon (per DESIGN.md Section 7.7)
     - Add a `<main>` content block with container class
     - Add a toast notification container at bottom-center (per DESIGN.md Section 7.5)
   - Create `static/js/main.js` — basic jQuery-powered toast notification show/dismiss system, settings gear icon click placeholder
   - Create `core/tests/test_layout.py` — tests that verify base template renders with correct CSS links, header nav is present, jQuery is loaded
 
 - **What you should see when done**:
-  - Visiting `http://localhost:8000/` shows the dark-themed page with the sticky header nav bar, "ReelForge" logo, and settings gear icon
+  - Visiting `http://localhost:8000/` shows the dark-themed page with the sticky header nav bar, "Peliku" logo, and settings gear icon
   - Colors, typography, and spacing match DESIGN.md
   - The page background is Neutral 900 (#0F172A), text is Neutral 50 (#F8FAFC)
 
@@ -252,7 +252,7 @@ Never run global `pip install` commands. Always activate `.venv` first, then use
   - `source .venv/Scripts/activate && python manage.py check` — Django system check passes
   - `source .venv/Scripts/activate && python -m pytest --tb=short -q` — all tests pass including layout tests
   - `source .venv/Scripts/activate && make lint` — lint passes
-  - Dev server responds with styled page: start server, `curl --fail --silent http://localhost:8000/ | grep -q "ReelForge"`, stop server
+  - Dev server responds with styled page: start server, `curl --fail --silent http://localhost:8000/ | grep -q "Peliku"`, stop server
 
 - **Makefile target name**: `checksprint4`
 
@@ -288,7 +288,7 @@ Never run global `pip install` commands. Always activate `.venv` first, then use
   - `http://localhost:8000/` shows the Home page with empty state message and "New Project" button
   - Clicking "New Project" navigates to `http://localhost:8000/projects/new/`
   - The form page shows all fields with proper dark-themed styling
-  - Back navigation works via the "ReelForge" logo in the header
+  - Back navigation works via the "Peliku" logo in the header
 
 - **Verification checklist**:
   - `source .venv/Scripts/activate && python -m pytest --tb=short -q` — all tests pass
@@ -425,7 +425,7 @@ Never run global `pip install` commands. Always activate `.venv` first, then use
 - **Verification checklist**:
   - `source .venv/Scripts/activate && python manage.py migrate --check` — no unapplied migrations
   - `source .venv/Scripts/activate && python manage.py seed_dev_data` — seed command runs without error
-  - `source .venv/Scripts/activate && python -c "import django; django.setup(); from core.models import Project; assert Project.objects.count() >= 3, 'Seed data missing'" 2>/dev/null || (export DJANGO_SETTINGS_MODULE=reelforge.settings && source .venv/Scripts/activate && python -c "import django; django.setup(); from core.models import Project; assert Project.objects.count() >= 3")` — seeded projects exist in DB
+  - `source .venv/Scripts/activate && python -c "import django; django.setup(); from core.models import Project; assert Project.objects.count() >= 3, 'Seed data missing'" 2>/dev/null || (export DJANGO_SETTINGS_MODULE=peliku.settings && source .venv/Scripts/activate && python -c "import django; django.setup(); from core.models import Project; assert Project.objects.count() >= 3")` — seeded projects exist in DB
   - `source .venv/Scripts/activate && python -m pytest --tb=short -q` — all model tests pass
 
 - **Makefile target name**: `checksprint8`
@@ -508,7 +508,7 @@ Never run global `pip install` commands. Always activate `.venv` first, then use
   - `source .venv/Scripts/activate && python -m pytest core/tests/test_script_generator.py --tb=short -q` — script generator tests pass
   - `source .venv/Scripts/activate && python -m pytest --tb=short -q` — full test suite passes
   - `source .venv/Scripts/activate && make lint` — lint passes
-  - Service module imports cleanly: `source .venv/Scripts/activate && DJANGO_SETTINGS_MODULE=reelforge.settings python -c "from core.services.script_generator import generate_all_scripts; print('OK')"`
+  - Service module imports cleanly: `source .venv/Scripts/activate && DJANGO_SETTINGS_MODULE=peliku.settings python -c "from core.services.script_generator import generate_all_scripts; print('OK')"`
 
 - **Makefile target name**: `checksprint10`
 
@@ -673,7 +673,7 @@ Never run global `pip install` commands. Always activate `.venv` first, then use
     - "Generate Video" click handler: POST to generate endpoint, get task_id, start polling with `pollTask`, update UI based on status changes
     - On completion: replace placeholder with `<video>` element, show success toast "Clip N generated successfully" per DESIGN.md Section 7.5
     - On failure: show inline error with "Retry" button
-  - Serve media files: ensure `reelforge/urls.py` serves `MEDIA_URL` in development
+  - Serve media files: ensure `peliku/urls.py` serves `MEDIA_URL` in development
   - Create `core/tests/test_video_generation.py`:
     - Test generate endpoint creates task
     - Test video_generator service with mocked Veo API
@@ -1395,7 +1395,7 @@ Never run global `pip install` commands. Always activate `.venv` first, then use
   - `source .venv/Scripts/activate && python -m pytest --tb=short -q` — full suite passes
   - `source .venv/Scripts/activate && make lint` — lint passes
   - `source .venv/Scripts/activate && pip-audit` — no known vulnerabilities
-  - README exists and is well-formed: start server, `curl --fail --silent http://localhost:8000/ | grep -q "ReelForge"`, stop server
+  - README exists and is well-formed: start server, `curl --fail --silent http://localhost:8000/ | grep -q "Peliku"`, stop server
 
 - **Makefile target name**: `checksprint30`
 
@@ -1456,7 +1456,7 @@ checksprint4:
 	$(ACTIVATE) && python -m pytest --tb=short -q
 	$(ACTIVATE) && make lint
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
-		curl --fail --silent http://localhost:8000/ | grep -q "ReelForge" ; \
+		curl --fail --silent http://localhost:8000/ | grep -q "Peliku" ; \
 		EXIT=$$? ; kill $$RF_PID 2>/dev/null ; exit $$EXIT
 
 # ─── Sprint 5: Home Page & New Project Form ─────────────────────────────────
@@ -1494,7 +1494,7 @@ checksprint7:
 checksprint8:
 	$(ACTIVATE) && python manage.py migrate --check
 	$(ACTIVATE) && python manage.py seed_dev_data
-	$(ACTIVATE) && DJANGO_SETTINGS_MODULE=reelforge.settings python -c "\
+	$(ACTIVATE) && DJANGO_SETTINGS_MODULE=peliku.settings python -c "\
 		import django; django.setup(); \
 		from core.models import Project; \
 		assert Project.objects.count() >= 3, 'Seed data missing'"
@@ -1518,7 +1518,7 @@ checksprint10:
 	$(ACTIVATE) && python -m pytest core/tests/test_script_generator.py --tb=short -q
 	$(ACTIVATE) && python -m pytest --tb=short -q
 	$(ACTIVATE) && make lint
-	$(ACTIVATE) && DJANGO_SETTINGS_MODULE=reelforge.settings python -c "\
+	$(ACTIVATE) && DJANGO_SETTINGS_MODULE=peliku.settings python -c "\
 		from core.services.script_generator import generate_all_scripts; print('OK')"
 
 # ─── Sprint 11: AI Script Generation Flow ───────────────────────────────────
@@ -1758,7 +1758,7 @@ checksprint30:
 	$(ACTIVATE) && make lint
 	$(ACTIVATE) && pip-audit 2>/dev/null || echo "WARN: pip-audit not available, skipping"
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
-		curl --fail --silent http://localhost:8000/ | grep -q "ReelForge" ; \
+		curl --fail --silent http://localhost:8000/ | grep -q "Peliku" ; \
 		EXIT=$$? ; kill $$RF_PID 2>/dev/null ; exit $$EXIT
 
 # ─── Aggregate Target ───────────────────────────────────────────────────────

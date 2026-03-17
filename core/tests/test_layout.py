@@ -13,11 +13,11 @@ class TestBaseLayout:
         """Set up a test client for each test."""
         self.client = Client()
 
-    def test_page_contains_reelforge_brand(self):
-        """Should render the ReelForge brand name in the header."""
+    def test_page_contains_peliku_brand(self):
+        """Should render the Peliku brand name in the header."""
         response = self.client.get("/")
         content = response.content.decode()
-        assert "ReelForge" in content
+        assert "Peliku" in content
 
     def test_page_loads_css_reset(self):
         """Should include reset.css link."""

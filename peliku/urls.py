@@ -1,4 +1,4 @@
-"""URL configuration for reelforge project."""
+"""URL configuration for peliku project."""
 
 from django.conf import settings
 from django.conf.urls.static import static
