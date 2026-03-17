@@ -1,0 +1,146 @@
+{# Settings slide-over panel — DESIGN.md §7.4, §12.3 #}
+<aside
+    class="settings-panel js-settings-panel"
+    aria-label="Settings"
+    aria-hidden="true"
+    role="dialog"
+>
+    <div class="settings-panel__header">
+        <h2 class="heading-3 settings-panel__title">Settings</h2>
+        <button
+            type="button"
+            class="btn-icon js-settings-close"
+            aria-label="Close settings"
+        >
+            <i class="ph ph-x" aria-hidden="true" style="font-size: 24px;"></i>
+        </button>
+    </div>
+
+    <div class="settings-panel__body">
+        {# Default Aspect Ratio #}
+        <div class="form-group">
+            <span class="form-label" id="settings-aspect-label">Default Aspect Ratio</span>
+            <div class="toggle-group" role="radiogroup" aria-labelledby="settings-aspect-label">
+                <label class="toggle-option">
+                    <input
+                        type="radio"
+                        name="default_aspect_ratio"
+                        value="9:16"
+                        checked
+                        disabled
+                        class="toggle-option__input"
+                    >
+                    <span class="toggle-option__label">
+                        <i class="ph ph-device-mobile" aria-hidden="true"></i>
+                        9:16
+                    </span>
+                </label>
+                <label class="toggle-option">
+                    <input
+                        type="radio"
+                        name="default_aspect_ratio"
+                        value="16:9"
+                        disabled
+                        class="toggle-option__input"
+                    >
+                    <span class="toggle-option__label">
+                        <i class="ph ph-monitor" aria-hidden="true"></i>
+                        16:9
+                    </span>
+                </label>
+            </div>
+        </div>
+
+        {# Default Clip Duration #}
+        <div class="form-group">
+            <label class="form-label" for="settings-clip-duration">Default Clip Duration</label>
+            <select
+                id="settings-clip-duration"
+                class="form-select"
+                disabled
+            >
+                <option value="4">4 seconds</option>
+                <option value="6">6 seconds</option>
+                <option value="8" selected>8 seconds</option>
+            </select>
+        </div>
+
+        {# Default Number of Clips #}
+        <div class="form-group">
+            <label class="form-label" for="settings-num-clips">Default Number of Clips</label>
+            <select
+                id="settings-num-clips"
+                class="form-select"
+                disabled
+            >
+                <option value="5">5 clips</option>
+                <option value="6">6 clips</option>
+                <option value="7" selected>7 clips</option>
+                <option value="8">8 clips</option>
+                <option value="9">9 clips</option>
+                <option value="10">10 clips</option>
+            </select>
+        </div>
+
+        {# Default Visual Style #}
+        <div class="form-group">
+            <label class="form-label" for="settings-visual-style">Default Visual Style</label>
+            <textarea
+                id="settings-visual-style"
+                class="form-textarea form-textarea--short"
+                rows="3"
+                disabled
+                placeholder="e.g. cinematic film grain, warm golden-hour tones"
+            ></textarea>
+        </div>
+
+        {# Video Quality #}
+        <div class="form-group">
+            <label class="form-label" for="settings-video-quality">Video Quality</label>
+            <select
+                id="settings-video-quality"
+                class="form-select"
+                disabled
+            >
+                <option value="720p" selected>720p</option>
+                <option value="1080p">1080p</option>
+                <option value="4k">4K</option>
+            </select>
+        </div>
+
+        {# Generation Speed #}
+        <div class="form-group">
+            <span class="form-label" id="settings-speed-label">Generation Speed</span>
+            <div class="toggle-group" role="radiogroup" aria-labelledby="settings-speed-label">
+                <label class="toggle-option">
+                    <input
+                        type="radio"
+                        name="generation_speed"
+                        value="quality"
+                        checked
+                        disabled
+                        class="toggle-option__input"
+                    >
+                    <span class="toggle-option__label">
+                        <i class="ph ph-diamond" aria-hidden="true"></i>
+                        Quality
+                    </span>
+                </label>
+                <label class="toggle-option">
+                    <input
+                        type="radio"
+                        name="generation_speed"
+                        value="fast"
+                        disabled
+                        class="toggle-option__input"
+                    >
+                    <span class="toggle-option__label">
+                        <i class="ph ph-lightning" aria-hidden="true"></i>
+                        Fast
+                    </span>
+                </label>
+            </div>
+        </div>
+    </div>
+</aside>
+<div class="settings-backdrop js-settings-backdrop" aria-hidden="true"></div>
