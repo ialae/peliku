@@ -1,4 +1,4 @@
-# Technology Stack — ReelForge
+# Technology Stack — Peliku
 
 > Generated from: FEATURE_SPECS.md
 > Date: March 15, 2026
@@ -8,7 +8,7 @@
 
 ## 1. Architecture Overview
 
-ReelForge uses a **Django monolith** architecture where Django handles everything: HTTP routing, template rendering, business logic, database access, file storage, and API communication with Gemini AI services. The frontend is rendered server-side using Django templates with progressive enhancement via jQuery and vanilla JavaScript for interactivity. This is the simplest possible architecture for a single-user tool with no scaling requirements, no deployment complexity, and no team coordination overhead. The single-user constraint means no authentication system, no multi-tenancy concerns, and no concurrent modification conflicts — everything Django adds complexity for in typical web apps is unnecessary here.
+Peliku uses a **Django monolith** architecture where Django handles everything: HTTP routing, template rendering, business logic, database access, file storage, and API communication with Gemini AI services. The frontend is rendered server-side using Django templates with progressive enhancement via jQuery and vanilla JavaScript for interactivity. This is the simplest possible architecture for a single-user tool with no scaling requirements, no deployment complexity, and no team coordination overhead. The single-user constraint means no authentication system, no multi-tenancy concerns, and no concurrent modification conflicts — everything Django adds complexity for in typical web apps is unnecessary here.
 
 The primary language is **Python 3.12** for the backend (Django, business logic, AI integration) and **JavaScript** for frontend interactivity. Python was chosen because the Gemini AI SDK (`google-genai`) is Python-first, Django is a mature Python framework with everything built-in, and Python's simplicity matches the straightforward requirements of a personal tool. JavaScript is kept minimal and framework-free per user preference — jQuery handles DOM manipulation and AJAX, vanilla JavaScript handles everything else.
 
@@ -131,7 +131,7 @@ Trade-offs: A monolith becomes harder to scale horizontally if this ever becomes
 - **Python logging module (built into Python)**
   - Purpose: application logs — errors, warnings, info messages for debugging script generation logic, video assembly, API calls
   - What it monitors: Django request errors, Celery task failures, Gemini API errors, file I/O errors, database errors
-  - Why chosen: Lightweight, requires no external service. Logs are written to a file (logs/reelforge.log) and/or stdout. The user can tail the log file to see what is happening. For a personal tool, this is sufficient.
+  - Why chosen: Lightweight, requires no external service. Logs are written to a file (logs/peliku.log) and/or stdout. The user can tail the log file to see what is happening. For a personal tool, this is sufficient.
 
 - **Django Debug Toolbar (development only)**
   - Purpose: in-browser debugging panel showing SQL queries, request/response data, template rendering time
@@ -334,4 +334,4 @@ For every major feature area from FEATURE_SPECS.md, this section lists the tools
 **Docker / Kubernetes (containerization)**
 - Category: deployment
 - Why rejected: This is a personal tool running on a single server. Docker adds a layer of abstraction and complexity (Dockerfile, docker-compose.yml, volume mounts, networking) for zero benefit when the target environment is a single Linux machine the user controls. The user can install Python, Redis, and nginx directly on the machine. No need for orchestration, service discovery, or horizontal scaling. Docker makes sense for teams with heterogeneous dev environments or multi-service architectures. Here, it is over-engineering.
-- When it might be reconsidered: If the tool is packaged for easy distribution to non-technical users ("download and run ReelForge on any machine"), Docker would provide a one-command installation. Also useful if the tool expands to multiple services (e.g., a separate video processing service, a separate AI service). Not relevant for V1.
+- When it might be reconsidered: If the tool is packaged for easy distribution to non-technical users ("download and run Peliku on any machine"), Docker would provide a one-command installation. Also useful if the tool expands to multiple services (e.g., a separate video processing service, a separate AI service). Not relevant for V1.

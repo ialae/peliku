@@ -14,8 +14,8 @@ def test_home_page_returns_200():
 
 
 @pytest.mark.django_db
-def test_home_page_contains_reelforge():
-    """Should contain 'ReelForge' text on the home page."""
+def test_home_page_contains_peliku():
+    """Should contain 'Peliku' text on the home page."""
     client = Client()
     response = client.get("/")
-    assert b"ReelForge" in response.content
+    assert b"Peliku" in response.content

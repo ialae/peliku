@@ -1,4 +1,4 @@
-"""Django settings for reelforge project."""
+"""Django settings for peliku project."""
 
 from pathlib import Path
 
@@ -37,7 +37,7 @@ MIDDLEWARE = [
     "debug_toolbar.middleware.DebugToolbarMiddleware",
 ]
 
-ROOT_URLCONF = "reelforge.urls"
+ROOT_URLCONF = "peliku.urls"
 
 TEMPLATES = [
     {
@@ -55,7 +55,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "reelforge.wsgi.application"
+WSGI_APPLICATION = "peliku.wsgi.application"
 
 
 # Database
@@ -133,7 +133,7 @@ LOGGING = {
         },
         "file": {
             "class": "logging.FileHandler",
-            "filename": LOG_DIR / "reelforge.log",
+            "filename": LOG_DIR / "peliku.log",
             "formatter": "verbose",
         },
     },

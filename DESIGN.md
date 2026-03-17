@@ -1,4 +1,4 @@
-# UI/UX Design System — ReelForge
+# UI/UX Design System — Peliku
 
 > Generated from: FEATURE_SPECS.md
 > Date: March 15, 2026
@@ -10,7 +10,7 @@
 
 ## 1. Design Philosophy
 
-ReelForge is a creative playground disguised as a powerhouse production tool. Because crafting short-form video content is inherently a highly visual and iterative process, the design must feel vibrant, approachable, and encouraging without getting in the way of the content itself. The interface defaults to dark mode—acting like a dimmed cinematic screening room—where our vibrant jewel-toned accents serve to guide the user's eye and reward actions. The experience should feel like stepping into a modern, slightly magical video editing suite that actually does the hard work for you.
+Peliku is a creative playground disguised as a powerhouse production tool. Because crafting short-form video content is inherently a highly visual and iterative process, the design must feel vibrant, approachable, and encouraging without getting in the way of the content itself. The interface defaults to dark mode—acting like a dimmed cinematic screening room—where our vibrant jewel-toned accents serve to guide the user's eye and reward actions. The experience should feel like stepping into a modern, slightly magical video editing suite that actually does the hard work for you.
 
 - Provide immediate, colorful visual feedback to reward progress.
 - Keep the interface dark and recessive so the vibrant video content stays the hero.
@@ -61,7 +61,7 @@ A dark-mode-first grayscale palette rooted in deep, cool grays (Slate) that feel
 
 ### 2.4 Dark Mode Palette
 
-Because ReelForge is inherently a cinematic tool, the product is primarily designed as a Dark Mode experience.
+Because Peliku is inherently a cinematic tool, the product is primarily designed as a Dark Mode experience.
 - Surface Level 0 (Body/Page): #0F172A (Neutral 900)
 - Surface Level 1 (Cards, Main Clip Panels): #1E293B (Neutral 800)
 - Surface Level 2 (Hover States, Input Backgrounds, Sub-panels): #334155 (Neutral 700)

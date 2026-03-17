@@ -1,5 +1,5 @@
 /**
- * Workspace JS — ReelForge
+ * Workspace JS — Peliku
  * jQuery handlers for the Project Workspace page.
  * Handles Reference Images Panel expand/collapse toggle.
  */

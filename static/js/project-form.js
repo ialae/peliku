@@ -1,5 +1,5 @@
 /**
- * Project Form JS — ReelForge
+ * Project Form JS — Peliku
  * Character count indicators for Description and Visual Style fields.
  */
 

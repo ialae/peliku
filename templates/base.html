@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}ReelForge{% endblock %}</title>
+    <title>{% block title %}Peliku{% endblock %}</title>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,15 +31,16 @@
     <link rel="stylesheet" href="{% static 'css/layout.css' %}">
     <link rel="stylesheet" href="{% static 'css/components.css' %}">
     <link rel="stylesheet" href="{% static 'css/animations.css' %}">
+    <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <!-- Global Header Nav -->
     <header class="site-header" role="banner">
         <div class="site-header__inner">
-            <a href="{% url 'core:home' %}" class="site-header__logo" aria-label="ReelForge — Home">
+            <a href="{% url 'core:home' %}" class="site-header__logo" aria-label="Peliku — Home">
                 <i class="ph-duotone ph-film-reel site-header__logo-icon" aria-hidden="true"></i>
-                <span>ReelForge</span>
+                <span>Peliku</span>
             </a>
             <div class="site-header__actions">
                 {% block header_actions %}{% endblock %}
@@ -64,6 +65,12 @@
 
     <!-- Toast Notification Container -->
     <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Settings Panel -->
+    {% include "core/partials/settings_panel.html" %}
+
+    <!-- Page-specific overlays -->
+    {% block overlay %}{% endblock %}
 
     <!-- jQuery 3.7+ -->
     <script

@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      SECRET_KEY: django-insecure-ci-test-key-reelforge-not-for-production
+      SECRET_KEY: django-insecure-ci-test-key-peliku-not-for-production
       DEBUG: "True"
       ALLOWED_HOSTS: localhost,127.0.0.1
       GEMINI_API_KEY: ""

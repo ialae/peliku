@@ -127,7 +127,7 @@ class TestProjectFormPage:
         assert "csrfmiddlewaretoken" in content
 
     def test_form_page_back_navigation_via_logo(self):
-        """Should contain ReelForge logo link back to home page."""
+        """Should contain Peliku logo link back to home page."""
         response = self.client.get("/projects/new/")
         content = response.content.decode()
-        assert "ReelForge" in content
+        assert "Peliku" in content
