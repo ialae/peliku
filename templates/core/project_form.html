@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}ReelForge — New Project{% endblock %}
+
+{% block content %}
+<section class="project-form-page" aria-label="Create new project">
+    <div class="project-form-wrapper">
+        <h1 class="heading-2 project-form__title">Create a new reel</h1>
+        <p class="body-small project-form__subtitle">
+            Describe your reel idea and choose your settings. AI will write the scripts.
+        </p>
+
+        <form
+            class="project-form"
+            method="post"
+            action="{% url 'core:project_form' %}"
+            novalidate
+        >
+            {% csrf_token %}
+
+            <!-- Title -->
+            <div class="form-group">
+                <label class="form-label" for="id_title">Title</label>
+                <input
+                    type="text"
+                    id="id_title"
+                    name="title"
+                    class="form-input"
+                    placeholder="My awesome reel"
+                    required
+                    maxlength="100"
+                    aria-required="true"
+                >
+                <span class="form-helper">Give your reel a short, memorable name.</span>
+            </div>
+
+            <!-- Description -->
+            <div class="form-group">
+                <label class="form-label" for="id_description">Description</label>
+                <textarea
+                    id="id_description"
+                    name="description"
+                    class="form-textarea js-charcount-field"
+                    placeholder="Describe the story, vibe, setting, characters, and emotions you want to evoke..."
+                    required
+                    maxlength="2000"
+                    rows="6"
+                    aria-required="true"
+                    data-max="2000"
+                ></textarea>
+                <div class="form-helper form-helper--counter">
+                    <span>The more detail, the better the scripts.</span>
+                    <span class="char-count js-char-count" aria-live="polite">
+                        <span class="js-char-current">0</span>/<span class="js-char-max">2000</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Aspect Ratio -->
+            <div class="form-group">
+                <span class="form-label" id="aspect-ratio-label">Aspect ratio</span>
+                <div class="toggle-group" role="radiogroup" aria-labelledby="aspect-ratio-label">
+                    <label class="toggle-option">
+                        <input
+                            type="radio"
+                            name="aspect_ratio"
+                            value="9:16"
+                            checked
+                            class="toggle-option__input"
+                        >
+                        <span class="toggle-option__label">
+                            <i class="ph ph-device-mobile" aria-hidden="true"></i>
+                            9:16 Portrait
+                        </span>
+                    </label>
+                    <label class="toggle-option">
+                        <input
+                            type="radio"
+                            name="aspect_ratio"
+                            value="16:9"
+                            class="toggle-option__input"
+                        >
+                        <span class="toggle-option__label">
+                            <i class="ph ph-monitor" aria-hidden="true"></i>
+                            16:9 Landscape
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Clip Duration -->
+            <div class="form-group">
+                <label class="form-label" for="id_clip_duration">Clip duration</label>
+                <select
+                    id="id_clip_duration"
+                    name="clip_duration"
+                    class="form-select"
+                >
+                    <option value="4">4 seconds</option>
+                    <option value="6">6 seconds</option>
+                    <option value="8" selected>8 seconds</option>
+                </select>
+            </div>
+
+            <!-- Visual Style -->
+            <div class="form-group">
+                <label class="form-label" for="id_visual_style">
+                    Visual style
+                    <span class="form-label__optional">(optional)</span>
+                </label>
+                <textarea
+                    id="id_visual_style"
+                    name="visual_style"
+                    class="form-textarea form-textarea--short js-charcount-field"
+                    placeholder="e.g. cinematic film grain, warm golden-hour tones, shallow depth of field"
+                    maxlength="500"
+                    rows="3"
+                    data-max="500"
+                ></textarea>
+                <div class="form-helper form-helper--counter">
+                    <span>Describe a global look applied to every clip.</span>
+                    <span class="char-count js-char-count" aria-live="polite">
+                        <span class="js-char-current">0</span>/<span class="js-char-max">500</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Number of Clips -->
+            <div class="form-group">
+                <label class="form-label" for="id_num_clips">Number of clips</label>
+                <select
+                    id="id_num_clips"
+                    name="num_clips"
+                    class="form-select"
+                >
+                    <option value="5">5 clips</option>
+                    <option value="6">6 clips</option>
+                    <option value="7" selected>7 clips</option>
+                    <option value="8">8 clips</option>
+                    <option value="9">9 clips</option>
+                    <option value="10">10 clips</option>
+                </select>
+            </div>
+
+            <!-- Submit -->
+            <div class="project-form__actions">
+                <button
+                    type="submit"
+                    class="btn btn--primary btn--lg project-form__submit"
+                    disabled
+                >
+                    <i class="ph ph-sparkle" aria-hidden="true"></i>
+                    Generate Scripts
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/project-form.js' %}"></script>
+{% endblock %}

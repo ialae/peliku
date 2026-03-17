@@ -1,7 +1,52 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}ReelForge — Home{% endblock %}
 
+{% block header_actions %}
+<a href="{% url 'core:project_form' %}" class="btn btn--primary btn--md">
+    <i class="ph ph-plus" aria-hidden="true"></i>
+    New Project
+</a>
+{% endblock %}
+
 {% block content %}
-<h1 class="heading-1">ReelForge</h1>
+<section class="home-page" aria-label="Projects dashboard">
+    <!-- Project grid (hidden when empty, populated in Sprint 9) -->
+    <div class="project-grid-area js-project-grid" style="display: none;">
+        <div class="project-grid-toolbar">
+            <div class="search-bar" role="search">
+                <i class="ph ph-magnifying-glass search-bar__icon" aria-hidden="true"></i>
+                <input
+                    type="search"
+                    class="form-input search-bar__input js-search-input"
+                    placeholder="Search projects..."
+                    aria-label="Search projects by title"
+                    disabled
+                >
+            </div>
+        </div>
+        <div class="project-grid grid js-project-cards">
+            <!-- Project cards will be rendered here in Sprint 9 -->
+        </div>
+    </div>
+
+    <!-- Empty state -->
+    <div class="empty-state js-empty-state">
+        <div class="empty-state__illustration" aria-hidden="true">
+            <i class="ph-duotone ph-film-reel empty-state__icon"></i>
+            <i class="ph-duotone ph-magic-wand empty-state__icon empty-state__icon--accent"></i>
+        </div>
+        <h1 class="heading-1 empty-state__heading">
+            No projects yet
+        </h1>
+        <p class="body-default empty-state__text">
+            Forge your first reel to get started.
+        </p>
+        <a href="{% url 'core:project_form' %}" class="btn btn--primary btn--lg empty-state__action">
+            <i class="ph ph-plus" aria-hidden="true"></i>
+            New Project
+        </a>
+    </div>
+</section>
 {% endblock %}
