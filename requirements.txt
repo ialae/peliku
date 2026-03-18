@@ -75,3 +75,5 @@ tzdata==2025.3
 urllib3==2.6.3
 virtualenv==21.2.0
 websockets==16.0
+python-dotenv==1.2.2
+python-telegram-bot==22.7
