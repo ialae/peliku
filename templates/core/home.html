@@ -12,8 +12,9 @@
 
 {% block content %}
 <section class="home-page" aria-label="Projects dashboard">
-    <!-- Project grid (hidden when empty, populated in Sprint 9) -->
-    <div class="project-grid-area js-project-grid" style="display: none;">
+    {% if project_data %}
+    <!-- Project grid (visible when projects exist) -->
+    <div class="project-grid-area js-project-grid">
         <div class="project-grid-toolbar">
             <div class="search-bar" role="search">
                 <i class="ph ph-magnifying-glass search-bar__icon" aria-hidden="true"></i>
@@ -22,15 +23,64 @@
                     class="form-input search-bar__input js-search-input"
                     placeholder="Search projects..."
                     aria-label="Search projects by title"
-                    disabled
                 >
             </div>
         </div>
         <div class="project-grid grid js-project-cards">
-            <!-- Project cards will be rendered here in Sprint 9 -->
+            {% for item in project_data %}
+            <a
+                href="{% url 'core:workspace' project_id=item.project.pk %}"
+                class="project-card card js-project-card"
+                data-project-id="{{ item.project.pk }}"
+                data-title="{{ item.project.title }}"
+            >
+                <div class="project-card__thumbnail">
+                    <i class="ph-duotone ph-film-reel project-card__placeholder-icon" aria-hidden="true"></i>
+                </div>
+                <div class="project-card__body">
+                    <h2 class="project-card__title heading-4 js-card-title">{{ item.project.title }}</h2>
+                    <div class="project-card__meta">
+                        <span class="project-card__date body-xs">
+                            {{ item.project.created_at|date:"M d, Y" }}
+                        </span>
+                        <span class="project-card__badge badge">{{ item.project.aspect_ratio }}</span>
+                    </div>
+                    <span class="project-card__progress body-xs">
+                        {{ item.generated_clips }}/{{ item.total_clips }} clips generated
+                    </span>
+                </div>
+                <div class="project-card__actions">
+                    <button
+                        type="button"
+                        class="btn-icon project-card__menu-btn js-card-menu-btn"
+                        aria-label="Project actions"
+                        title="More actions"
+                    >
+                        <i class="ph ph-dots-three-vertical" aria-hidden="true"></i>
+                    </button>
+                    <div class="project-card__dropdown js-card-dropdown" role="menu" aria-label="Project actions">
+                        <button type="button" class="project-card__dropdown-item js-duplicate-btn" role="menuitem">
+                            <i class="ph ph-copy" aria-hidden="true"></i>
+                            Duplicate
+                        </button>
+                        <button type="button" class="project-card__dropdown-item js-rename-btn" role="menuitem">
+                            <i class="ph ph-pencil-simple" aria-hidden="true"></i>
+                            Rename
+                        </button>
+                        <button type="button" class="project-card__dropdown-item project-card__dropdown-item--danger js-delete-btn" role="menuitem">
+                            <i class="ph ph-trash" aria-hidden="true"></i>
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
         </div>
+        <p class="search-empty-message body-default js-search-empty" style="display: none;">
+            No projects match your search.
+        </p>
     </div>
-
+    {% else %}
     <!-- Empty state -->
     <div class="empty-state js-empty-state">
         <div class="empty-state__illustration" aria-hidden="true">
@@ -48,5 +98,28 @@
             New Project
         </a>
     </div>
+    {% endif %}
 </section>
+
+{% include "core/partials/confirm_modal.html" %}
+
+<!-- Inline rename overlay -->
+<div class="rename-overlay js-rename-overlay" style="display: none;">
+    <label for="rename-input" class="sr-only">New project title</label>
+    <input
+        type="text"
+        id="rename-input"
+        class="form-input rename-overlay__input js-rename-input"
+        maxlength="100"
+        aria-label="New project title"
+    >
+    <div class="rename-overlay__actions">
+        <button type="button" class="btn btn--primary btn--sm js-rename-save">Save</button>
+        <button type="button" class="btn btn--ghost btn--sm js-rename-cancel">Cancel</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/home.js' %}"></script>
 {% endblock %}

@@ -99,33 +99,34 @@
         </div>
         {% endif %}
 
+
         <article
             class="clip-card card"
-            data-clip="{{ clip.number }}"
-            aria-label="Clip {{ clip.number }}"
+            data-clip="{{ clip.sequence_number }}"
+            aria-label="Clip {{ clip.sequence_number }}"
         >
             {# Drag handle #}
-            <div class="clip-card__drag" aria-label="Drag to reorder clip {{ clip.number }}" role="img">
+            <div class="clip-card__drag" aria-label="Drag to reorder clip {{ clip.sequence_number }}" role="img">
                 <i class="ph ph-dots-six-vertical" aria-hidden="true"></i>
             </div>
 
             <div class="clip-card__content">
                 {# ── Left Panel: Script ── #}
                 <div class="clip-card__left">
-                    <h2 class="heading-3 clip-card__heading">Clip {{ clip.number }}</h2>
+                    <h2 class="heading-3 clip-card__heading">Clip {{ clip.sequence_number }}</h2>
                     <div class="form-group">
-                        <label class="form-label" for="script-{{ clip.number }}">Script</label>
+                        <label class="form-label" for="script-{{ clip.sequence_number }}">Script</label>
                         <textarea
-                            id="script-{{ clip.number }}"
+                            id="script-{{ clip.sequence_number }}"
                             class="form-textarea clip-card__script"
                             rows="6"
                             maxlength="2000"
-                            aria-label="Script for clip {{ clip.number }}"
-                        >{{ clip.script }}</textarea>
+                            aria-label="Script for clip {{ clip.sequence_number }}"
+                        >{{ clip.script_text }}</textarea>
                         <div class="form-helper form-helper--counter">
                             <span></span>
                             <span class="char-count" aria-live="polite">
-                                <span class="js-char-current">{{ clip.script|length }}</span>/2000
+                                <span class="js-char-current">{{ clip.script_text|length }}</span>/2000
                             </span>
                         </div>
                     </div>
@@ -133,7 +134,7 @@
                         type="button"
                         class="btn btn--secondary btn--sm"
                         disabled
-                        aria-label="Regenerate script for clip {{ clip.number }}"
+                        aria-label="Regenerate script for clip {{ clip.sequence_number }}"
                     >
                         <i class="ph ph-arrows-clockwise" aria-hidden="true"></i>
                         Regenerate Script
@@ -149,18 +150,18 @@
                         type="button"
                         class="btn btn--primary btn--md clip-card__generate-btn"
                         disabled
-                        aria-label="Generate video for clip {{ clip.number }}"
+                        aria-label="Generate video for clip {{ clip.sequence_number }}"
                     >
                         <i class="ph ph-sparkle" aria-hidden="true"></i>
                         Generate Video
                     </button>
                     <div class="form-group">
-                        <label class="form-label" for="gen-method-{{ clip.number }}">Generation Method</label>
+                        <label class="form-label" for="gen-method-{{ clip.sequence_number }}">Generation Method</label>
                         <select
-                            id="gen-method-{{ clip.number }}"
+                            id="gen-method-{{ clip.sequence_number }}"
                             class="form-select"
                             disabled
-                            aria-label="Generation method for clip {{ clip.number }}"
+                            aria-label="Generation method for clip {{ clip.sequence_number }}"
                         >
                             <option value="text_to_video" selected>Text-to-Video</option>
                             <option value="image_to_video">Image-to-Video</option>
