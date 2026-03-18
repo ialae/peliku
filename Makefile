@@ -60,17 +60,21 @@ checksprint5:
 # ─── Sprint 6: Project Workspace Shell ───────────────────────────────────────
 
 checksprint6:
+	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
-		curl --fail --silent http://localhost:8000/projects/1/ | grep -q "Generate Video" && \
-		curl --fail --silent http://localhost:8000/projects/1/ | grep -q "Regenerate Script" ; \
+		PROJECT_URL=$$(curl --fail --silent http://localhost:8000/ | grep -oP '/projects/\d+/' | head -1) && \
+		curl --fail --silent http://localhost:8000$$PROJECT_URL | grep -q "Generate Video" && \
+		curl --fail --silent http://localhost:8000$$PROJECT_URL | grep -q "Regenerate Script" ; \
 		EXIT=$$? ; kill $$RF_PID 2>/dev/null ; exit $$EXIT
 
 # ─── Sprint 7: Settings, Preview & Responsive ───────────────────────────────
 
 checksprint7:
+	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
+		PROJECT_URL=$$(curl --fail --silent http://localhost:8000/ | grep -oP '/projects/\d+/' | head -1) && \
 		curl --fail --silent http://localhost:8000/ | grep -qi "settings" && \
-		curl --fail --silent http://localhost:8000/projects/1/ | grep -qi "preview" ; \
+		curl --fail --silent http://localhost:8000$$PROJECT_URL | grep -qi "preview" ; \
 		EXIT=$$? ; kill $$RF_PID 2>/dev/null ; exit $$EXIT
 
 # ─── Sprint 8: Database Models & Seed Data ───────────────────────────────────

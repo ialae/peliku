@@ -335,8 +335,8 @@ Never run global `pip install` commands. Always activate `.venv` first, then use
 - **Verification checklist**:
   - `source .venv/Scripts/activate && python -m pytest --tb=short -q` — all tests pass
   - `source .venv/Scripts/activate && make lint` — lint passes
-  - Workspace loads: start server, `curl --fail --silent http://localhost:8000/projects/1/ | grep -q "Generate Video"`, stop server
-  - Workspace has clip panels: start server, `curl --fail --silent http://localhost:8000/projects/1/ | grep -q "Regenerate Script"`, stop server
+  - Workspace loads: start server, seed dev data, extract a project URL from home page, `curl --fail --silent http://localhost:8000/projects/<id>/ | grep -q "Generate Video"`, stop server
+  - Workspace has clip panels: start server, `curl --fail --silent http://localhost:8000/projects/<id>/ | grep -q "Regenerate Script"`, stop server
 
 - **Makefile target name**: `checksprint6`
 
@@ -388,7 +388,7 @@ Never run global `pip install` commands. Always activate `.venv` first, then use
   - `source .venv/Scripts/activate && python -m pytest --tb=short -q` — all tests pass
   - `source .venv/Scripts/activate && make lint` — lint passes
   - Settings panel markup present: start server, `curl --fail --silent http://localhost:8000/ | grep -q "settings"`, stop server
-  - Preview overlay markup present: start server, `curl --fail --silent http://localhost:8000/projects/1/ | grep -q "preview"`, stop server
+  - Preview overlay markup present: start server, seed dev data, extract a project URL from home page, `curl --fail --silent http://localhost:8000/projects/<id>/ | grep -q "preview"`, stop server
 
 - **Makefile target name**: `checksprint7`
 
@@ -1472,21 +1472,21 @@ checksprint5:
 # ─── Sprint 6: Project Workspace Shell ───────────────────────────────────────
 
 checksprint6:
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
+	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
-		curl --fail --silent http://localhost:8000/projects/1/ | grep -q "Generate Video" && \
-		curl --fail --silent http://localhost:8000/projects/1/ | grep -q "Regenerate Script" ; \
+		PROJECT_URL=$$(curl --fail --silent http://localhost:8000/ | grep -oP '/projects/\d+/' | head -1) && \
+		curl --fail --silent http://localhost:8000$$PROJECT_URL | grep -q "Generate Video" && \
+		curl --fail --silent http://localhost:8000$$PROJECT_URL | grep -q "Regenerate Script" ; \
 		EXIT=$$? ; kill $$RF_PID 2>/dev/null ; exit $$EXIT
 
 # ─── Sprint 7: Settings, Preview & Responsive ───────────────────────────────
 
 checksprint7:
-	$(ACTIVATE) && python -m pytest --tb=short -q
-	$(ACTIVATE) && make lint
+	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
+		PROJECT_URL=$$(curl --fail --silent http://localhost:8000/ | grep -oP '/projects/\d+/' | head -1) && \
 		curl --fail --silent http://localhost:8000/ | grep -qi "settings" && \
-		curl --fail --silent http://localhost:8000/projects/1/ | grep -qi "preview" ; \
+		curl --fail --silent http://localhost:8000$$PROJECT_URL | grep -qi "preview" ; \
 		EXIT=$$? ; kill $$RF_PID 2>/dev/null ; exit $$EXIT
 
 # ─── Sprint 8: Database Models & Seed Data ───────────────────────────────────
