@@ -4,6 +4,8 @@ import pytest
 
 from django.test import Client
 
+from core.models import Project
+
 
 @pytest.mark.django_db
 class TestHomePage:
@@ -43,13 +45,15 @@ class TestHomePage:
         assert "/projects/new/" in content
 
     def test_home_page_contains_search_bar(self):
-        """Should contain a search bar input in the project grid area."""
+        """Should contain a search bar when projects exist."""
+        Project.objects.create(title="Test", description="d")
         response = self.client.get("/")
         content = response.content.decode()
         assert "Search projects" in content
 
     def test_home_page_contains_project_grid_area(self):
-        """Should contain a project grid area div."""
+        """Should contain a project grid area div when projects exist."""
+        Project.objects.create(title="Test", description="d")
         response = self.client.get("/")
         content = response.content.decode()
         assert "js-project-grid" in content

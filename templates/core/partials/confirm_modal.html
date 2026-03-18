@@ -1,0 +1,18 @@
+<!-- Confirmation modal — DESIGN.md §7.4 -->
+<div class="modal-overlay js-confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+    <div class="modal">
+        <div class="modal__header">
+            <h2 id="confirm-modal-title" class="heading-3 js-confirm-title">Confirm action</h2>
+            <button type="button" class="btn-icon js-confirm-close" aria-label="Close dialog">
+                <i class="ph ph-x" aria-hidden="true"></i>
+            </button>
+        </div>
+        <div class="modal__body">
+            <p class="body-default js-confirm-message">Are you sure?</p>
+        </div>
+        <div class="modal__footer">
+            <button type="button" class="btn btn--ghost btn--sm js-confirm-cancel">Cancel</button>
+            <button type="button" class="btn btn--danger btn--sm js-confirm-ok">Delete</button>
+        </div>
+    </div>
+</div>

@@ -26,13 +26,21 @@
                     type="text"
                     id="id_title"
                     name="title"
-                    class="form-input"
+                    class="form-input {% if errors.title %}form-input--error{% endif %}"
                     placeholder="My awesome reel"
                     required
                     maxlength="100"
                     aria-required="true"
+                    value="{{ form_data.title|default:'' }}"
                 >
+                {% if errors.title %}
+                <span class="form-error">
+                    <i class="ph ph-warning-circle" aria-hidden="true"></i>
+                    {{ errors.title }}
+                </span>
+                {% else %}
                 <span class="form-helper">Give your reel a short, memorable name.</span>
+                {% endif %}
             </div>
 
             <!-- Description -->
@@ -41,20 +49,27 @@
                 <textarea
                     id="id_description"
                     name="description"
-                    class="form-textarea js-charcount-field"
+                    class="form-textarea js-charcount-field {% if errors.description %}form-textarea--error{% endif %}"
                     placeholder="Describe the story, vibe, setting, characters, and emotions you want to evoke..."
                     required
                     maxlength="2000"
                     rows="6"
                     aria-required="true"
                     data-max="2000"
-                ></textarea>
+                >{{ form_data.description|default:'' }}</textarea>
+                {% if errors.description %}
+                <span class="form-error">
+                    <i class="ph ph-warning-circle" aria-hidden="true"></i>
+                    {{ errors.description }}
+                </span>
+                {% else %}
                 <div class="form-helper form-helper--counter">
                     <span>The more detail, the better the scripts.</span>
                     <span class="char-count js-char-count" aria-live="polite">
                         <span class="js-char-current">0</span>/<span class="js-char-max">2000</span>
                     </span>
                 </div>
+                {% endif %}
             </div>
 
             <!-- Aspect Ratio -->
@@ -66,7 +81,7 @@
                             type="radio"
                             name="aspect_ratio"
                             value="9:16"
-                            checked
+                            {% if form_data.aspect_ratio == "9:16" or defaults.aspect_ratio == "9:16" or not form_data and not defaults %}checked{% endif %}
                             class="toggle-option__input"
                         >
                         <span class="toggle-option__label">
@@ -79,6 +94,7 @@
                             type="radio"
                             name="aspect_ratio"
                             value="16:9"
+                            {% if form_data.aspect_ratio == "16:9" or defaults.aspect_ratio == "16:9" %}checked{% endif %}
                             class="toggle-option__input"
                         >
                         <span class="toggle-option__label">
@@ -97,9 +113,9 @@
                     name="clip_duration"
                     class="form-select"
                 >
-                    <option value="4">4 seconds</option>
-                    <option value="6">6 seconds</option>
-                    <option value="8" selected>8 seconds</option>
+                    <option value="4" {% if form_data.clip_duration == "4" or defaults.clip_duration == 4 %}selected{% endif %}>4 seconds</option>
+                    <option value="6" {% if form_data.clip_duration == "6" or defaults.clip_duration == 6 %}selected{% endif %}>6 seconds</option>
+                    <option value="8" {% if not form_data and not defaults or form_data.clip_duration == "8" or defaults.clip_duration == 8 %}selected{% endif %}>8 seconds</option>
                 </select>
             </div>
 
@@ -112,18 +128,25 @@
                 <textarea
                     id="id_visual_style"
                     name="visual_style"
-                    class="form-textarea form-textarea--short js-charcount-field"
+                    class="form-textarea form-textarea--short js-charcount-field {% if errors.visual_style %}form-textarea--error{% endif %}"
                     placeholder="e.g. cinematic film grain, warm golden-hour tones, shallow depth of field"
                     maxlength="500"
                     rows="3"
                     data-max="500"
-                ></textarea>
+                >{{ form_data.visual_style|default:defaults.visual_style }}</textarea>
+                {% if errors.visual_style %}
+                <span class="form-error">
+                    <i class="ph ph-warning-circle" aria-hidden="true"></i>
+                    {{ errors.visual_style }}
+                </span>
+                {% else %}
                 <div class="form-helper form-helper--counter">
                     <span>Describe a global look applied to every clip.</span>
                     <span class="char-count js-char-count" aria-live="polite">
                         <span class="js-char-current">0</span>/<span class="js-char-max">500</span>
                     </span>
                 </div>
+                {% endif %}
             </div>
 
             <!-- Number of Clips -->
@@ -134,12 +157,12 @@
                     name="num_clips"
                     class="form-select"
                 >
-                    <option value="5">5 clips</option>
-                    <option value="6">6 clips</option>
-                    <option value="7" selected>7 clips</option>
-                    <option value="8">8 clips</option>
-                    <option value="9">9 clips</option>
-                    <option value="10">10 clips</option>
+                    <option value="5" {% if form_data.num_clips == "5" or defaults.num_clips == 5 %}selected{% endif %}>5 clips</option>
+                    <option value="6" {% if form_data.num_clips == "6" or defaults.num_clips == 6 %}selected{% endif %}>6 clips</option>
+                    <option value="7" {% if not form_data and not defaults or form_data.num_clips == "7" or defaults.num_clips == 7 %}selected{% endif %}>7 clips</option>
+                    <option value="8" {% if form_data.num_clips == "8" or defaults.num_clips == 8 %}selected{% endif %}>8 clips</option>
+                    <option value="9" {% if form_data.num_clips == "9" or defaults.num_clips == 9 %}selected{% endif %}>9 clips</option>
+                    <option value="10" {% if form_data.num_clips == "10" or defaults.num_clips == 10 %}selected{% endif %}>10 clips</option>
                 </select>
             </div>
 
@@ -148,7 +171,6 @@
                 <button
                     type="submit"
                     class="btn btn--primary btn--lg project-form__submit"
-                    disabled
                 >
                     <i class="ph ph-sparkle" aria-hidden="true"></i>
                     Generate Scripts

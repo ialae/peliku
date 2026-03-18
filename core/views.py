@@ -1,48 +1,271 @@
 """Views for the core app."""
 
-from django.shortcuts import render
+import json
+import logging
+
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+
+from core.models import Clip, Project, ReferenceImage, UserSettings
+
+logger = logging.getLogger(__name__)
 
 
 def home(request):
-    """Render the home page with the project dashboard."""
-    return render(request, "core/home.html")
+    """Render the home page with real projects from the database."""
+    projects = Project.objects.all().order_by("-updated_at")
+    project_data = []
+    for project in projects:
+        total_clips = project.clips.count()
+        generated_clips = project.clips.filter(generation_status="completed").count()
+        project_data.append(
+            {
+                "project": project,
+                "total_clips": total_clips,
+                "generated_clips": generated_clips,
+            }
+        )
+    context = {
+        "project_data": project_data,
+    }
+    return render(request, "core/home.html", context)
 
 
 def project_form(request):
-    """Render the new-project form page."""
-    return render(request, "core/project_form.html")
+    """Render the new-project form or handle POST to create a project."""
+    if request.method == "POST":
+        return _handle_create_project(request)
+
+    defaults = {
+        "aspect_ratio": "9:16",
+        "clip_duration": 8,
+        "num_clips": 7,
+        "visual_style": "",
+    }
+    try:
+        settings = UserSettings.load()
+        defaults = {
+            "aspect_ratio": settings.default_aspect_ratio,
+            "clip_duration": settings.default_clip_duration,
+            "num_clips": settings.default_num_clips,
+            "visual_style": settings.default_visual_style,
+        }
+    except Exception:
+        logger.debug("UserSettings not available, using form defaults.")
+
+    return render(request, "core/project_form.html", {"defaults": defaults})
+
+
+def _handle_create_project(request):
+    """Validate form data, create project + empty clips, redirect."""
+    title = request.POST.get("title", "").strip()
+    description = request.POST.get("description", "").strip()
+    visual_style = request.POST.get("visual_style", "").strip()
+    aspect_ratio = request.POST.get("aspect_ratio", "9:16")
+    clip_duration = request.POST.get("clip_duration", "8")
+    num_clips = request.POST.get("num_clips", "7")
+
+    errors = {}
+    if not title:
+        errors["title"] = "Title is required."
+    elif len(title) > 100:
+        errors["title"] = "Title must be 100 characters or fewer."
+
+    if not description:
+        errors["description"] = "Description is required."
+    elif len(description) > 2000:
+        errors["description"] = "Description must be 2,000 characters or fewer."
+
+    if len(visual_style) > 500:
+        errors["visual_style"] = "Visual style must be 500 characters or fewer."
+
+    if aspect_ratio not in ("9:16", "16:9"):
+        errors["aspect_ratio"] = "Invalid aspect ratio."
+
+    try:
+        clip_duration = int(clip_duration)
+        if clip_duration not in (4, 6, 8):
+            errors["clip_duration"] = "Clip duration must be 4, 6, or 8."
+    except (ValueError, TypeError):
+        errors["clip_duration"] = "Invalid clip duration."
+
+    try:
+        num_clips = int(num_clips)
+        if not (5 <= num_clips <= 10):
+            errors["num_clips"] = "Number of clips must be between 5 and 10."
+    except (ValueError, TypeError):
+        errors["num_clips"] = "Invalid number of clips."
+
+    if errors:
+        return render(
+            request,
+            "core/project_form.html",
+            {
+                "errors": errors,
+                "form_data": request.POST,
+                "defaults": {
+                    "aspect_ratio": "",
+                    "clip_duration": "",
+                    "num_clips": "",
+                    "visual_style": "",
+                },
+            },
+        )
+
+    project = Project.objects.create(
+        title=title,
+        description=description,
+        visual_style=visual_style,
+        aspect_ratio=aspect_ratio,
+        clip_duration=clip_duration,
+        num_clips=num_clips,
+    )
+
+    for seq in range(1, num_clips + 1):
+        Clip.objects.create(
+            project=project,
+            sequence_number=seq,
+        )
+
+    return redirect("core:workspace", project_id=project.pk)
 
 
 def workspace(request, project_id):
-    """Render the Project Workspace page with dummy clip data.
-
-    Displays a shell layout with static placeholder clips, a compact
-    header bar, and a collapsible Reference Images Panel.  Real data
-    will be wired in Sprint 8+.
-    """
-    dummy_clips = [
-        {
-            "number": i,
-            "script": (
-                f"Clip {i} — A sweeping aerial shot reveals the "
-                "sun-drenched coastline at golden hour. Warm amber "
-                "light bathes the rocky cliffs as seabirds glide "
-                "through the frame. The camera slowly pushes forward "
-                "toward a lone lighthouse perched on the headland."
-            ),
-        }
-        for i in range(1, 4)
-    ]
+    """Render the Project Workspace page with real project data."""
+    project = get_object_or_404(Project, pk=project_id)
+    clips = project.clips.all().order_by("sequence_number")
 
     context = {
-        "project": {
-            "id": project_id,
-            "title": "Untitled Project",
-            "description": "A short reel about nature and adventure.",
-            "aspect_ratio": "9:16",
-            "clip_duration": 8,
-            "visual_style": "Cinematic, warm golden-hour tones",
-        },
-        "clips": dummy_clips,
+        "project": project,
+        "clips": clips,
     }
     return render(request, "core/workspace.html", context)
+
+
+@csrf_exempt
+@require_POST
+def api_delete_project(request, project_id):
+    """Delete a project and all associated media files."""
+    project = get_object_or_404(Project, pk=project_id)
+
+    _delete_project_media(project)
+    project.delete()
+
+    return JsonResponse({"status": "deleted"})
+
+
+def _delete_project_media(project):
+    """Remove media files from disk for a project's clips and references."""
+    for clip in project.clips.all():
+        if clip.video_file and clip.video_file.name:
+            try:
+                clip.video_file.delete(save=False)
+            except Exception:
+                logger.warning("Failed to delete video: %s", clip.video_file.name)
+        if clip.first_frame and clip.first_frame.name:
+            try:
+                clip.first_frame.delete(save=False)
+            except Exception:
+                logger.warning("Failed to delete frame: %s", clip.first_frame.name)
+        if clip.last_frame and clip.last_frame.name:
+            try:
+                clip.last_frame.delete(save=False)
+            except Exception:
+                logger.warning("Failed to delete frame: %s", clip.last_frame.name)
+
+    for ref in project.reference_images.all():
+        if ref.image_file and ref.image_file.name:
+            try:
+                ref.image_file.delete(save=False)
+            except Exception:
+                logger.warning("Failed to delete ref image: %s", ref.image_file.name)
+
+
+@csrf_exempt
+@require_POST
+def api_rename_project(request, project_id):
+    """Rename a project. Accepts JSON {"title": "New Name"}."""
+    project = get_object_or_404(Project, pk=project_id)
+
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid JSON."}, status=400)
+
+    new_title = body.get("title", "").strip()
+    if not new_title:
+        return JsonResponse({"error": "Title is required."}, status=400)
+    if len(new_title) > 100:
+        return JsonResponse(
+            {"error": "Title must be 100 characters or fewer."}, status=400
+        )
+
+    project.title = new_title
+    project.save(update_fields=["title", "updated_at"])
+
+    return JsonResponse({"status": "renamed", "title": project.title})
+
+
+@csrf_exempt
+@require_POST
+def api_duplicate_project(request, project_id):
+    """Duplicate a project: copies metadata, clips scripts, refs. No videos."""
+    project = get_object_or_404(Project, pk=project_id)
+
+    new_project = Project.objects.create(
+        title=f"{project.title} (Copy)",
+        description=project.description,
+        visual_style=project.visual_style,
+        aspect_ratio=project.aspect_ratio,
+        clip_duration=project.clip_duration,
+        num_clips=project.num_clips,
+    )
+
+    for clip in project.clips.all():
+        Clip.objects.create(
+            project=new_project,
+            sequence_number=clip.sequence_number,
+            script_text=clip.script_text,
+        )
+
+    for ref in project.reference_images.all():
+        new_file_name = ""
+        if ref.image_file and ref.image_file.name:
+            try:
+                from django.core.files.base import ContentFile
+
+                original_file = ref.image_file
+                original_file.open("rb")
+                content = original_file.read()
+                original_file.close()
+                new_ref = ReferenceImage(
+                    project=new_project,
+                    slot_number=ref.slot_number,
+                    label=ref.label,
+                )
+                new_ref.image_file.save(
+                    original_file.name.split("/")[-1],
+                    ContentFile(content),
+                    save=True,
+                )
+                continue
+            except Exception:
+                logger.warning("Failed to copy ref image: %s", ref.image_file.name)
+                new_file_name = ref.image_file.name
+
+        ReferenceImage.objects.create(
+            project=new_project,
+            slot_number=ref.slot_number,
+            image_file=new_file_name or ref.image_file.name,
+            label=ref.label,
+        )
+
+    return JsonResponse(
+        {
+            "status": "duplicated",
+            "new_project_id": new_project.pk,
+            "new_title": new_project.title,
+        }
+    )

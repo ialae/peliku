@@ -4,6 +4,8 @@ import pytest
 
 from django.test import Client
 
+from core.models import Clip, Project
+
 
 @pytest.mark.django_db
 class TestSettingsPanel:
@@ -69,7 +71,13 @@ class TestSettingsPanel:
 
     def test_settings_panel_on_workspace_page(self):
         """Should render settings panel on the workspace page too."""
-        response = self.client.get("/projects/1/")
+        project = Project.objects.create(
+            title="Test",
+            description="d",
+            num_clips=1,
+        )
+        Clip.objects.create(project=project, sequence_number=1)
+        response = self.client.get(f"/projects/{project.pk}/")
         content = response.content.decode()
         assert "js-settings-panel" in content
 
@@ -79,36 +87,44 @@ class TestPreviewOverlay:
     """Verify the preview overlay markup is rendered on the workspace."""
 
     def setup_method(self):
-        """Set up a test client for each test."""
+        """Set up a test client and create a project for workspace tests."""
         self.client = Client()
+        self.project = Project.objects.create(
+            title="Preview Test",
+            description="d",
+            num_clips=2,
+        )
+        for seq in range(1, 3):
+            Clip.objects.create(project=self.project, sequence_number=seq)
+        self.workspace_url = f"/projects/{self.project.pk}/"
 
     def test_workspace_contains_preview_overlay(self):
         """Should render the preview overlay on the workspace page."""
-        response = self.client.get("/projects/1/")
+        response = self.client.get(self.workspace_url)
         content = response.content.decode()
         assert "js-preview-overlay" in content
 
     def test_preview_overlay_has_close_button(self):
         """Should render a close button in the preview overlay."""
-        response = self.client.get("/projects/1/")
+        response = self.client.get(self.workspace_url)
         content = response.content.decode()
         assert "js-preview-close-btn" in content
 
     def test_preview_overlay_has_scrubber(self):
         """Should render the timeline scrubber in the preview overlay."""
-        response = self.client.get("/projects/1/")
+        response = self.client.get(self.workspace_url)
         content = response.content.decode()
         assert "preview-overlay__scrubber" in content
 
     def test_preview_overlay_has_playback_controls(self):
         """Should render playback controls in the preview overlay."""
-        response = self.client.get("/projects/1/")
+        response = self.client.get(self.workspace_url)
         content = response.content.decode()
         assert "preview-overlay__controls" in content
 
     def test_preview_overlay_has_video_placeholder(self):
         """Should render a video placeholder in the preview overlay."""
-        response = self.client.get("/projects/1/")
+        response = self.client.get(self.workspace_url)
         content = response.content.decode()
         assert "preview-overlay__video-placeholder" in content
 
@@ -120,7 +136,7 @@ class TestPreviewOverlay:
 
     def test_preview_toggle_button_exists(self):
         """Should render the Preview Reel button with the js toggle class."""
-        response = self.client.get("/projects/1/")
+        response = self.client.get(self.workspace_url)
         content = response.content.decode()
         assert "js-preview-toggle" in content
 

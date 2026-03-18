@@ -14,4 +14,19 @@ urlpatterns = [
         views.workspace,
         name="workspace",
     ),
+    path(
+        "api/projects/<int:project_id>/delete/",
+        views.api_delete_project,
+        name="api_delete_project",
+    ),
+    path(
+        "api/projects/<int:project_id>/rename/",
+        views.api_rename_project,
+        name="api_rename_project",
+    ),
+    path(
+        "api/projects/<int:project_id>/duplicate/",
+        views.api_duplicate_project,
+        name="api_duplicate_project",
+    ),
 ]
