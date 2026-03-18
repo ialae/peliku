@@ -1,6 +1,6 @@
 /**
  * Project Form JS — Peliku
- * Character count indicators for Description and Visual Style fields.
+ * Character count indicators and form submission loading state.
  */
 
 const ProjectForm = (function ($) {
@@ -42,9 +42,27 @@ const ProjectForm = (function ($) {
     });
   }
 
+  /**
+   * Show loading overlay and disable the form on submit.
+   * Uses setTimeout to defer disabling so the browser collects form data first.
+   */
+  function bindFormSubmit() {
+    $(".project-form").on("submit", function () {
+      const $form = $(this);
+      const $overlay = $(".js-loading-overlay");
+
+      $overlay.addClass("is-active").attr("aria-hidden", "false");
+
+      setTimeout(function () {
+        $form.find("input, textarea, select, button").prop("disabled", true);
+      }, 0);
+    });
+  }
+
   return {
     init() {
       bindCharCountFields();
+      bindFormSubmit();
     },
   };
 })(jQuery);

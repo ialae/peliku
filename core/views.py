@@ -8,7 +8,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
+from core.forms import ProjectForm
 from core.models import Clip, Project, ReferenceImage, UserSettings
+from core.services.script_generator import generate_all_scripts
 
 logger = logging.getLogger(__name__)
 
@@ -59,46 +61,10 @@ def project_form(request):
 
 
 def _handle_create_project(request):
-    """Validate form data, create project + empty clips, redirect."""
-    title = request.POST.get("title", "").strip()
-    description = request.POST.get("description", "").strip()
-    visual_style = request.POST.get("visual_style", "").strip()
-    aspect_ratio = request.POST.get("aspect_ratio", "9:16")
-    clip_duration = request.POST.get("clip_duration", "8")
-    num_clips = request.POST.get("num_clips", "7")
-
-    errors = {}
-    if not title:
-        errors["title"] = "Title is required."
-    elif len(title) > 100:
-        errors["title"] = "Title must be 100 characters or fewer."
-
-    if not description:
-        errors["description"] = "Description is required."
-    elif len(description) > 2000:
-        errors["description"] = "Description must be 2,000 characters or fewer."
-
-    if len(visual_style) > 500:
-        errors["visual_style"] = "Visual style must be 500 characters or fewer."
-
-    if aspect_ratio not in ("9:16", "16:9"):
-        errors["aspect_ratio"] = "Invalid aspect ratio."
-
-    try:
-        clip_duration = int(clip_duration)
-        if clip_duration not in (4, 6, 8):
-            errors["clip_duration"] = "Clip duration must be 4, 6, or 8."
-    except (ValueError, TypeError):
-        errors["clip_duration"] = "Invalid clip duration."
-
-    try:
-        num_clips = int(num_clips)
-        if not (5 <= num_clips <= 10):
-            errors["num_clips"] = "Number of clips must be between 5 and 10."
-    except (ValueError, TypeError):
-        errors["num_clips"] = "Invalid number of clips."
-
-    if errors:
+    """Validate form data, create project with AI scripts, redirect."""
+    form = ProjectForm(request.POST)
+    if not form.is_valid():
+        errors = {field: error_list[0] for field, error_list in form.errors.items()}
         return render(
             request,
             "core/project_form.html",
@@ -115,21 +81,47 @@ def _handle_create_project(request):
         )
 
     project = Project.objects.create(
-        title=title,
-        description=description,
-        visual_style=visual_style,
-        aspect_ratio=aspect_ratio,
-        clip_duration=clip_duration,
-        num_clips=num_clips,
+        title=form.cleaned_data["title"],
+        description=form.cleaned_data["description"],
+        visual_style=form.cleaned_data["visual_style"],
+        aspect_ratio=form.cleaned_data["aspect_ratio"],
+        clip_duration=form.cleaned_data["clip_duration"],
+        num_clips=form.cleaned_data["num_clips"],
     )
 
+    scripts = _generate_scripts_safely(project)
+    num_clips = form.cleaned_data["num_clips"]
+
     for seq in range(1, num_clips + 1):
+        script_text = scripts[seq - 1] if scripts else ""
         Clip.objects.create(
             project=project,
             sequence_number=seq,
+            script_text=script_text,
         )
 
     return redirect("core:workspace", project_id=project.pk)
+
+
+def _generate_scripts_safely(project):
+    """Call AI script generation, returning empty list on failure.
+
+    Args:
+        project: A Project model instance.
+
+    Returns:
+        list[str]: Generated scripts, or empty list if generation fails.
+    """
+    try:
+        return generate_all_scripts(project)
+    except Exception:
+        logger.warning(
+            "AI script generation failed for project '%s'; "
+            "clips will have empty scripts.",
+            project.title,
+            exc_info=True,
+        )
+        return []
 
 
 def workspace(request, project_id):
