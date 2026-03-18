@@ -550,7 +550,7 @@ Never run global `pip install` commands. Always activate `.venv` first, then use
   - `source .venv/Scripts/activate && python -m pytest core/tests/test_project_creation.py --tb=short -q` — project creation tests pass
   - `source .venv/Scripts/activate && python -m pytest --tb=short -q` — full suite passes
   - `source .venv/Scripts/activate && make lint` — lint passes
-  - Form submission creates project: start server, `curl --fail --silent -X POST http://localhost:8000/projects/new/ -d "title=Test+Reel&description=A+test+reel+about+nature&aspect_ratio=9:16&clip_duration=8&num_clips=5" -L -o /dev/null -w "%{http_code}" | grep -q "200"`, stop server
+  - Form submission creates project: `DJANGO_SETTINGS_MODULE=peliku.settings python -c "..."` — uses Django test client (with mocked AI) to POST the form, verifies project and 5 clips are created with scripts, and redirect to workspace
 
 - **Makefile target name**: `checksprint11`
 
