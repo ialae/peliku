@@ -97,8 +97,7 @@ checksprint9:
 # ─── Sprint 10: Gemini AI SDK & Script Service ──────────────────────────────
 
 checksprint10:
-	$(ACTIVATE) && DJANGO_SETTINGS_MODULE=peliku.settings python -c "\
-		from core.services.script_generator import generate_all_scripts; print('OK')"
+	$(ACTIVATE) && DJANGO_SETTINGS_MODULE=peliku.settings python -c "from core.services.script_generator import generate_all_scripts; print('OK')"
 
 # ─── Sprint 11: AI Script Generation Flow ───────────────────────────────────
 
