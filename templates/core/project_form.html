@@ -177,6 +177,22 @@
                 </button>
             </div>
         </form>
+
+        <!-- Loading overlay shown during AI script generation -->
+        <div class="loading-overlay js-loading-overlay" role="alert" aria-live="assertive" aria-hidden="true">
+            <div class="loading-overlay__backdrop"></div>
+            <div class="loading-overlay__content">
+                <div class="spinner loading-overlay__spinner" aria-hidden="true"></div>
+                <p class="heading-3 loading-overlay__heading">Writing your clip scripts&hellip;</p>
+                <p class="body-small loading-overlay__hint">AI is crafting a unified narrative for your reel.</p>
+                <div class="loading-overlay__skeleton-group">
+                    <div class="skeleton loading-overlay__skeleton-bar" style="width: 90%; height: 12px;"></div>
+                    <div class="skeleton loading-overlay__skeleton-bar" style="width: 75%; height: 12px;"></div>
+                    <div class="skeleton loading-overlay__skeleton-bar" style="width: 85%; height: 12px;"></div>
+                    <div class="skeleton loading-overlay__skeleton-bar" style="width: 60%; height: 12px;"></div>
+                </div>
+            </div>
+        </div>
     </div>
 </section>
 {% endblock %}

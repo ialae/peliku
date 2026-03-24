@@ -1003,3 +1003,70 @@
     white-space: nowrap;
     border: 0;
 }
+
+/* ─── Loading Overlay (form submission) ────────────────────── */
+
+.loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-overlay);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+        opacity var(--duration-normal) var(--ease-default),
+        visibility var(--duration-normal) var(--ease-default);
+}
+
+.loading-overlay.is-active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.loading-overlay__backdrop {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(2, 6, 23, 0.8);
+    backdrop-filter: blur(4px);
+}
+
+.loading-overlay__content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+    text-align: center;
+    max-width: 400px;
+    padding: var(--space-8);
+}
+
+.loading-overlay__spinner {
+    width: 40px;
+    height: 40px;
+}
+
+.loading-overlay__heading {
+    color: var(--color-text-primary);
+    margin: 0;
+}
+
+.loading-overlay__hint {
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.loading-overlay__skeleton-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    width: 100%;
+    margin-top: var(--space-4);
+}
+
+.loading-overlay__skeleton-bar {
+    height: 12px;
+}

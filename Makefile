@@ -102,11 +102,7 @@ checksprint10:
 # ─── Sprint 11: AI Script Generation Flow ───────────────────────────────────
 
 checksprint11:
-	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
-		curl --fail --silent -X POST http://localhost:8000/projects/new/ \
-			-d "title=TestReel&description=A+test+reel+about+nature&aspect_ratio=9:16&clip_duration=8&num_clips=5" \
-			-L -o /dev/null -w "%{http_code}" | grep -q "200" ; \
-		EXIT=$$? ; kill $$RF_PID 2>/dev/null ; exit $$EXIT
+	$(ACTIVATE) && DJANGO_SETTINGS_MODULE=peliku.settings python -c "import django; django.setup(); from django.conf import settings; settings.ALLOWED_HOSTS.append('testserver'); from unittest.mock import patch; from django.test import Client; from core.models import Project; c = Client(); scripts = ['mock script {}'.format(i) for i in range(1, 6)]; patcher = patch('core.views.generate_all_scripts', return_value=scripts); patcher.start(); r = c.post('/projects/new/', {'title':'TestReel','description':'A test reel','aspect_ratio':'9:16','clip_duration':'8','num_clips':'5'}); patcher.stop(); assert r.status_code == 302, 'Expected redirect, got {}'.format(r.status_code); p = Project.objects.filter(title='TestReel').last(); assert p is not None, 'Project not created'; assert p.clips.count() == 5, 'Expected 5 clips, got {}'.format(p.clips.count()); assert all(cl.script_text for cl in p.clips.all()), 'Clips missing scripts'; print('Project creation with AI scripts: OK')"
 
 # ─── Sprint 12: Workspace Script Display & Editing ──────────────────────────
 
