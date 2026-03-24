@@ -29,4 +29,9 @@ urlpatterns = [
         views.api_duplicate_project,
         name="api_duplicate_project",
     ),
+    path(
+        "api/clips/<int:clip_id>/update-script/",
+        views.api_update_clip_script,
+        name="api_update_clip_script",
+    ),
 ]

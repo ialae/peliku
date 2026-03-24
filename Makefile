@@ -109,8 +109,10 @@ checksprint11:
 checksprint12:
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
-		curl --fail --silent http://localhost:8000/projects/1/ | grep -q "Clip" && \
-		curl --fail --silent -X POST http://localhost:8000/api/clips/1/update-script/ \
+		PROJECT_URL=$$(curl --fail --silent http://localhost:8000/ | grep -oP '/projects/\d+/' | head -1) && \
+		curl --fail --silent http://localhost:8000$$PROJECT_URL | grep -q "Clip" && \
+		CLIP_ID=$$(DJANGO_SETTINGS_MODULE=peliku.settings python -c "import django; django.setup(); from core.models import Clip; print(Clip.objects.first().pk)") && \
+		curl --fail --silent -X POST http://localhost:8000/api/clips/$${CLIP_ID}/update-script/ \
 			-H "Content-Type: application/json" -d '{"script_text":"Updated test script"}' \
 			-w "%{http_code}" -o /dev/null | grep -qE "200|404" ; \
 		EXIT=$$? ; kill $$RF_PID 2>/dev/null ; exit $$EXIT
