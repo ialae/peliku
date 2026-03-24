@@ -34,4 +34,9 @@ urlpatterns = [
         views.api_update_clip_script,
         name="api_update_clip_script",
     ),
+    path(
+        "api/tasks/<int:task_id>/status/",
+        views.api_task_status,
+        name="api_task_status",
+    ),
 ]
