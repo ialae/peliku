@@ -30,7 +30,7 @@
 4. Commit and push: `git push -u origin sprint/N`
 5. Run `@sprintreviewer` to verify and open a PR
 6. Squash merge the PR into `main`
-7. Clean up: `git branch -d sprint/N && git push origin --delete sprint/N`
+7. Clean up: `git branch -D sprint/N && git push origin --delete sprint/N`
 
 ### Bootstrapping Note (Sprints 1–2)
 
@@ -597,8 +597,9 @@ Never run global `pip install` commands. Always activate `.venv` first, then use
 - **Verification checklist**:
   - `source .venv/Scripts/activate && python -m pytest --tb=short -q` — all tests pass
   - `source .venv/Scripts/activate && make lint` — lint passes
-  - Workspace shows real clips: start server, seed data, `curl --fail --silent http://localhost:8000/projects/1/ | grep -q "Clip"`, stop server
-  - Script update API works: start server, seed data, `curl --fail --silent -X POST http://localhost:8000/api/clips/1/update-script/ -H "Content-Type: application/json" -d "{\"script_text\":\"Updated script\"}" -w "%{http_code}" | grep -q "200"`, stop server
+  - Workspace shows real clips: start server, seed data, dynamically find a project URL from the home page, `curl` that workspace URL and `grep -q "Clip"`, stop server
+  - Script update API works: start server, seed data, dynamically resolve a clip ID from the database, `curl -X POST /api/clips/<id>/update-script/` with JSON body, verify HTTP 200, stop server
+  - _Changed in Sprint 12: Hardcoded `/projects/1/` and `/api/clips/1/` replaced with dynamic ID lookup because auto-incremented IDs do not reset between test runs._
 
 - **Makefile target name**: `checksprint12`
 

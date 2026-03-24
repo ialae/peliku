@@ -278,6 +278,22 @@
     width: 100%;
 }
 
+/* ─── Save Status Indicator ───────────────────────────────── */
+
+.save-status {
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    transition: opacity var(--duration-fast) var(--ease-default);
+}
+
+.save-status--saved {
+    color: var(--color-success-500);
+}
+
+.save-status--error {
+    color: var(--color-error-500);
+}
+
 /* ─── Responsive: stack clip panels on mobile ─────────────── */
 
 @media (max-width: 767px) {

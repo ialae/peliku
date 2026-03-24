@@ -156,7 +156,7 @@ The file starts with a title, metadata, and usage instructions:
 - **Python dependency installation policy**: Never run global `pip install` commands. Require one isolated mode: activated `.venv` with `python -m pip ...`, or Docker container commands (`docker compose run --rm app ...` / `docker compose exec app ...`).
 - **Bootstrapping note (Sprints 1–2)**: Sprints 1 and 2 are merged manually since CI/CD and branch protection are set up in Sprint 3. From Sprint 3 onward, all PRs go through the full CI pipeline and branch protection rules.
 - **Post-deploy verification**: After merging a sprint PR, if the project uses `checkdeployN` targets (because preview deployments are not available), run `make checkdeployN` to verify the production deployment. If deployment checks fail, follow the rollback process below.
-- After merging a sprint PR, clean up the branch: `git branch -d sprint/N && git push origin --delete sprint/N`
+- After merging a sprint PR, clean up the branch: `git branch -D sprint/N && git push origin --delete sprint/N`
 
 ---
 

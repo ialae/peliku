@@ -261,3 +261,38 @@ def api_duplicate_project(request, project_id):
             "new_title": new_project.title,
         }
     )
+
+
+MAX_SCRIPT_LENGTH = 2000
+
+
+@csrf_exempt
+@require_POST
+def api_update_clip_script(request, clip_id):
+    """Update a clip's script text. Accepts JSON {"script_text": "..."}."""
+    clip = get_object_or_404(Clip, pk=clip_id)
+
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid JSON."}, status=400)
+
+    script_text = body.get("script_text")
+    if script_text is None:
+        return JsonResponse({"error": "script_text is required."}, status=400)
+
+    if not isinstance(script_text, str):
+        return JsonResponse({"error": "script_text must be a string."}, status=400)
+
+    if len(script_text) > MAX_SCRIPT_LENGTH:
+        return JsonResponse(
+            {
+                "error": f"Script must be {MAX_SCRIPT_LENGTH} characters or fewer.",
+            },
+            status=400,
+        )
+
+    clip.script_text = script_text
+    clip.save(update_fields=["script_text"])
+
+    return JsonResponse({"status": "updated", "clip_id": clip.pk})
