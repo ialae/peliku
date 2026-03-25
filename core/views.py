@@ -9,7 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from core.forms import ProjectForm
-from core.models import Clip, Project, ReferenceImage, UserSettings
+from core.models import Clip, Project, ReferenceImage, Task, UserSettings
 from core.services.script_generator import generate_all_scripts
 
 logger = logging.getLogger(__name__)
@@ -296,3 +296,32 @@ def api_update_clip_script(request, clip_id):
     clip.save(update_fields=["script_text"])
 
     return JsonResponse({"status": "updated", "clip_id": clip.pk})
+
+
+def api_task_status(request, task_id):
+    """Return the current status of a background task as JSON.
+
+    GET /api/tasks/<id>/status/
+
+    Response JSON:
+        {
+            "id": <int>,
+            "task_type": <str>,
+            "status": "pending" | "running" | "completed" | "failed",
+            "progress": <int 0-100>,
+            "result_data": <dict|list|null>,
+            "error_message": <str>
+        }
+    """
+    task = get_object_or_404(Task, pk=task_id)
+
+    return JsonResponse(
+        {
+            "id": task.pk,
+            "task_type": task.task_type,
+            "status": task.status,
+            "progress": task.progress,
+            "result_data": task.result_data,
+            "error_message": task.error_message,
+        }
+    )
