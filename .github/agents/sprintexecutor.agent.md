@@ -414,7 +414,7 @@ When the sprint verification passes, report to the user with:
 - **Changes to SPRINTS.md or Makefile** (if any): List each change with a one-line reason
 - **Changes to STACK.md, SD.md, or FEATURE_SPECS.md** (if any): For each change, explain what was changed, why deviation was unavoidable, and what alternatives were considered. **Flag these prominently** — they represent shifts in foundational project decisions.
 - **Branch**: Confirm all work is on branch `sprint/N` and ready for review
-- **Next step**: _"Run `@sprintreviewer [N]` to run all tests, verify the sprint, and open a pull request. Once merged, clean up the branch with `git branch -d sprint/N && git push origin --delete sprint/N`, then run `@sprintexecutor [N+1]` to execute the next sprint."_ (or _"This was the final sprint. Run `@sprintreviewer [N]` to open the final pull request."_ if it was the last one)
+- **Next step**: _"Run `@sprintreviewer [N]` to run all tests, verify the sprint, and open a pull request. Once merged, clean up the branch with `git branch -D sprint/N && git push origin --delete sprint/N`, then run `@sprintexecutor [N+1]` to execute the next sprint."_ (or _"This was the final sprint. Run `@sprintreviewer [N]` to open the final pull request."_ if it was the last one)
 
 ---
 

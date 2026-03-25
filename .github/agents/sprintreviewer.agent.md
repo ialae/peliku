@@ -269,7 +269,7 @@ Report to the user:
 - **Sprint [N] verification**: Passed (`make checksprintN` exited with code 0)
 - **Branch**: `sprint/N`
 - **Pull request**: [PR URL] — created and CI/CD pipeline triggered
-- **Next step**: _"Once the CI/CD pipeline passes, squash-merge the PR into `main`. Then clean up the branch: `git branch -d sprint/N && git push origin --delete sprint/N`. Finally, run `@sprintexecutor [N+1]` to start the next sprint."_ (or _"This was the final sprint. Once merged, the project is complete."_ if it was the last one)
+- **Next step**: _"Once the CI/CD pipeline passes, squash-merge the PR into `main`. Then clean up the branch: `git branch -D sprint/N && git push origin --delete sprint/N`. Finally, run `@sprintexecutor [N+1]` to start the next sprint."_ (or _"This was the final sprint. Once merged, the project is complete."_ if it was the last one)
 - **Post-deploy verification** (if applicable): _"If the project uses `checkdeployN` targets (no preview deployments), run `make checkdeployN` after the PR is merged and the deployment completes to verify the production environment. If deployment checks fail, follow the rollback process documented in the Rollback Guidance section."_
 
 ### If Any Check Failed

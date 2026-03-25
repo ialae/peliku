@@ -30,7 +30,7 @@
 4. Commit and push: `git push -u origin sprint/N`
 5. Run `@sprintreviewer` to verify and open a PR
 6. Squash merge the PR into `main`
-7. Clean up: `git branch -d sprint/N && git push origin --delete sprint/N`
+7. Clean up: `git branch -D sprint/N && git push origin --delete sprint/N`
 
 ### Bootstrapping Note (Sprints 1–2)
 
