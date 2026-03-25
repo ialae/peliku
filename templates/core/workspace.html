@@ -45,7 +45,7 @@
     </div>
 
     {# ── Reference Images Panel (collapsed by default) ── #}
-    <div class="ref-panel" aria-label="Reference images panel">
+    <div class="ref-panel" aria-label="Reference images panel" data-project-id="{{ project.pk }}">
         <button
             type="button"
             class="ref-panel__toggle js-ref-toggle"
@@ -55,7 +55,7 @@
             <div class="ref-panel__toggle-left">
                 <i class="ph ph-images-square" aria-hidden="true"></i>
                 <span class="ref-panel__toggle-label">Reference Images</span>
-                <span class="badge badge--small">0 / 3</span>
+                <span class="badge badge--small js-ref-count">{{ references|length }} / 3</span>
             </div>
             <i class="ph ph-caret-down ref-panel__caret" aria-hidden="true"></i>
         </button>
@@ -69,12 +69,64 @@
             </p>
             <div class="ref-panel__slots">
                 {% for slot_num in "123" %}
-                <div class="ref-slot" aria-label="Reference image slot {{ slot_num }}">
-                    <div class="ref-slot__preview">
-                        <i class="ph ph-plus ref-slot__icon" aria-hidden="true"></i>
+                {% with slot_num|add:"0" as sn %}
+                <div class="ref-slot js-ref-slot" data-slot="{{ slot_num }}" aria-label="Reference image slot {{ slot_num }}">
+                    {% for ref in references %}
+                    {% if ref.slot_number|stringformat:"d" == slot_num %}
+                    <div class="ref-slot__preview ref-slot__preview--filled" data-ref-id="{{ ref.pk }}">
+                        <img
+                            src="{{ ref.image_file.url }}"
+                            alt="{{ ref.label }}"
+                            class="ref-slot__img"
+                        >
+                        <button
+                            type="button"
+                            class="ref-slot__remove js-ref-remove"
+                            aria-label="Remove reference image {{ ref.label }}"
+                        >
+                            <i class="ph ph-x" aria-hidden="true"></i>
+                        </button>
                     </div>
-                    <span class="body-small ref-slot__label">Slot {{ slot_num }}</span>
+                    <input
+                        type="text"
+                        class="form-input form-input--sm ref-slot__label-input"
+                        value="{{ ref.label }}"
+                        maxlength="100"
+                        aria-label="Label for reference {{ slot_num }}"
+                        readonly
+                    >
+                    {% endif %}
+                    {% endfor %}
+                    {% if not references or slot_num not in "123" %}
+                    {% endif %}
+                    <div class="ref-slot__empty {% for ref in references %}{% if ref.slot_number|stringformat:"d" == slot_num %}hidden{% endif %}{% endfor %}">
+                        <div class="ref-slot__preview">
+                            <i class="ph ph-plus ref-slot__icon" aria-hidden="true"></i>
+                        </div>
+                        <span class="body-small ref-slot__label">Slot {{ slot_num }}</span>
+                        <div class="ref-slot__actions">
+                            <button
+                                type="button"
+                                class="btn btn--secondary btn--sm js-ref-generate"
+                                aria-label="Generate reference image for slot {{ slot_num }}"
+                            >
+                                <i class="ph ph-sparkle" aria-hidden="true"></i>
+                                Generate
+                            </button>
+                            <label class="btn btn--secondary btn--sm js-ref-upload-label">
+                                <i class="ph ph-upload-simple" aria-hidden="true"></i>
+                                Upload
+                                <input
+                                    type="file"
+                                    class="visually-hidden js-ref-upload-input"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    aria-label="Upload reference image for slot {{ slot_num }}"
+                                >
+                            </label>
+                        </div>
+                    </div>
                 </div>
+                {% endwith %}
                 {% endfor %}
             </div>
         </div>
@@ -231,6 +283,39 @@
                             <option value="image_to_video">Image-to-Video</option>
                             <option value="frame_interpolation">Frame Interpolation</option>
                         </select>
+                    </div>
+
+                    {# ── Per-Clip Reference Selection ── #}
+                    <div class="clip-refs js-clip-refs" data-clip-id="{{ clip.pk }}">
+                        <div class="clip-refs__header">
+                            <span class="form-label">References</span>
+                            <button type="button" class="btn btn--ghost btn--xs js-ref-select-all" aria-label="Select all references for clip {{ clip.sequence_number }}">
+                                Select All
+                            </button>
+                        </div>
+                        <div class="clip-refs__list">
+                            {% for ref in references %}
+                            <label class="clip-refs__item">
+                                <input
+                                    type="checkbox"
+                                    class="clip-refs__checkbox js-ref-checkbox"
+                                    value="{{ ref.pk }}"
+                                    {% if ref.pk in clip.selected_references %}checked{% endif %}
+                                    aria-label="Include {{ ref.label }} for clip {{ clip.sequence_number }}"
+                                >
+                                {% if ref.image_file %}
+                                <img
+                                    src="{{ ref.image_file.url }}"
+                                    alt="{{ ref.label }}"
+                                    class="clip-refs__thumb"
+                                >
+                                {% endif %}
+                                <span class="clip-refs__name">{{ ref.label }}</span>
+                            </label>
+                            {% empty %}
+                            <p class="body-small clip-refs__empty">No references defined yet.</p>
+                            {% endfor %}
+                        </div>
                     </div>
                 </div>
             </div>

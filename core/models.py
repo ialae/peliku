@@ -111,6 +111,11 @@ class Clip(models.Model):
         blank=True,
         default="",
     )
+    selected_references = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of ReferenceImage PKs selected for this clip.",
+    )
     extension_count = models.IntegerField(default=0)
     generation_reference_id = models.CharField(
         max_length=255,

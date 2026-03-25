@@ -124,6 +124,58 @@ def _poll_operation(client, operation):
     return operation
 
 
+def _build_reference_images(clip):
+    """Build VideoGenerationReferenceImage list for selected references.
+
+    Reads the clip's selected_references (list of ReferenceImage PKs),
+    loads each image file, and wraps it for the Veo API.
+
+    Args:
+        clip: A Clip model instance.
+
+    Returns:
+        list: VideoGenerationReferenceImage objects, or empty list.
+    """
+    if not clip.selected_references:
+        return []
+
+    from core.models import ReferenceImage
+
+    ref_images = ReferenceImage.objects.filter(
+        pk__in=clip.selected_references,
+        project=clip.project,
+    )
+
+    result = []
+    for ref in ref_images:
+        if not ref.image_file or not ref.image_file.name:
+            continue
+        try:
+            ref_path = Path(settings.MEDIA_ROOT) / ref.image_file.name
+            if not ref_path.exists():
+                logger.warning("Reference image not found: %s", ref_path)
+                continue
+
+            image_bytes = ref_path.read_bytes()
+            image_part = types.Part.from_bytes(
+                data=image_bytes,
+                mime_type="image/png",
+            )
+            result.append(
+                types.VideoGenerationReferenceImage(
+                    image=image_part,
+                    reference_type="asset",
+                )
+            )
+        except Exception:
+            logger.warning(
+                "Failed to load reference image %s for Veo.",
+                ref.image_file.name,
+            )
+
+    return result
+
+
 def generate_text_to_video(clip):
     """Generate a video for a clip using the Text-to-Video method.
 
@@ -154,6 +206,10 @@ def generate_text_to_video(clip):
         user_settings = _get_user_settings()
         config = _build_video_config(clip, user_settings)
         model_name = _get_veo_model(user_settings["generation_speed"])
+
+        ref_images = _build_reference_images(clip)
+        if ref_images:
+            config.reference_images = ref_images
 
         operation = client.models.generate_videos(
             model=model_name,
