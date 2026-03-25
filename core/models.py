@@ -114,6 +114,7 @@ class Clip(models.Model):
     selected_references = models.JSONField(
         default=list,
         blank=True,
+        db_default=models.Value("[]"),
         help_text="List of ReferenceImage PKs selected for this clip.",
     )
     extension_count = models.IntegerField(default=0)
