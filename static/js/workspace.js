@@ -201,7 +201,7 @@ const Workspace = (function ($) {
       method: "POST",
       contentType: "application/json",
       headers: { "X-CSRFToken": getCsrfToken() },
-      data: JSON.stringify({}),
+      data: JSON.stringify({ method: getClipMethod($card) }),
       success: function (data) {
         TaskPoller.pollTask(data.task_id, {
           onProgress: function () {
@@ -614,12 +614,237 @@ const Workspace = (function ($) {
     });
   }
 
+  /* ── Generation Method Switching ── */
+
+  /**
+   * Get the selected generation method for a clip card.
+   * @param {jQuery} $card - The .clip-card article element.
+   * @returns {string} The selected generation method value.
+   */
+  function getClipMethod($card) {
+    return $card.find(".js-gen-method").val() || "text_to_video";
+  }
+
+  /**
+   * Bind generation method dropdown change handler.
+   * Toggles the first-frame panel visibility and saves the selection.
+   */
+  function bindGenMethodChange() {
+    $(document).on("change", ".js-gen-method", function () {
+      var $select = $(this);
+      var $card = $select.closest(".clip-card");
+      var clipId = $card.data("clip-id");
+      var method = $select.val();
+
+      var $firstFramePanel = $card.find(".js-first-frame-panel");
+
+      if (method === "image_to_video") {
+        $firstFramePanel.removeClass("hidden");
+      } else {
+        $firstFramePanel.addClass("hidden");
+      }
+
+      $.ajax({
+        url: "/api/clips/" + clipId + "/update-method/",
+        method: "POST",
+        contentType: "application/json",
+        headers: { "X-CSRFToken": getCsrfToken() },
+        data: JSON.stringify({ method: method }),
+      });
+    });
+  }
+
+  /* ── First Frame Management ── */
+
+  /**
+   * Render a first-frame image into the preview area.
+   * @param {jQuery} $panel - The .js-first-frame-panel element.
+   * @param {string} imageUrl - The URL of the first-frame image.
+   */
+  function renderFirstFrame($panel, imageUrl) {
+    var $preview = $panel.find(".js-first-frame-preview");
+    $preview.html(
+      '<img src="' +
+        imageUrl +
+        '" alt="First frame" class="first-frame-panel__img">'
+    );
+  }
+
+  /**
+   * Bind the "Generate Image" button in the first-frame panel.
+   */
+  function bindFirstFrameGenerate() {
+    $(document).on("click", ".js-first-frame-generate", function () {
+      var $btn = $(this);
+      var $panel = $btn.closest(".js-first-frame-panel");
+      var clipId = $panel.data("clip-id");
+
+      $btn.prop("disabled", true).text("Generating\u2026");
+
+      $.ajax({
+        url: "/api/clips/" + clipId + "/set-first-frame/",
+        method: "POST",
+        contentType: "application/json",
+        headers: { "X-CSRFToken": getCsrfToken() },
+        data: JSON.stringify({ source: "generate" }),
+        success: function (data) {
+          if (data.task_id) {
+            TaskPoller.pollTask(data.task_id, {
+              onComplete: function (taskData) {
+                var imageUrl =
+                  taskData.result_data && taskData.result_data.image_url
+                    ? taskData.result_data.image_url
+                    : "";
+                if (imageUrl) {
+                  renderFirstFrame($panel, imageUrl);
+                }
+                $btn.prop("disabled", false).html(
+                  '<i class="ph ph-sparkle" aria-hidden="true"></i> Generate Image'
+                );
+                if (typeof Peliku !== "undefined" && Peliku.Toast) {
+                  Peliku.Toast.show("First frame generated", "success");
+                }
+              },
+              onError: function () {
+                $btn.prop("disabled", false).html(
+                  '<i class="ph ph-sparkle" aria-hidden="true"></i> Generate Image'
+                );
+                if (typeof Peliku !== "undefined" && Peliku.Toast) {
+                  Peliku.Toast.show("First frame generation failed", "error");
+                }
+              },
+            });
+          }
+        },
+        error: function (xhr) {
+          $btn.prop("disabled", false).html(
+            '<i class="ph ph-sparkle" aria-hidden="true"></i> Generate Image'
+          );
+          var msg = "Could not generate first frame.";
+          try {
+            var body = JSON.parse(xhr.responseText);
+            if (body.error) {
+              msg = body.error;
+            }
+          } catch (e) {
+            /* use default */
+          }
+          if (typeof Peliku !== "undefined" && Peliku.Toast) {
+            Peliku.Toast.show(msg, "error");
+          }
+        },
+      });
+    });
+  }
+
+  /**
+   * Bind the file upload input in the first-frame panel.
+   */
+  function bindFirstFrameUpload() {
+    $(document).on("change", ".js-first-frame-upload-input", function () {
+      var $input = $(this);
+      var file = $input[0].files[0];
+      if (!file) {
+        return;
+      }
+
+      var $panel = $input.closest(".js-first-frame-panel");
+      var clipId = $panel.data("clip-id");
+
+      var formData = new FormData();
+      formData.append("source", "upload");
+      formData.append("image", file);
+
+      $.ajax({
+        url: "/api/clips/" + clipId + "/set-first-frame/",
+        method: "POST",
+        headers: { "X-CSRFToken": getCsrfToken() },
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function (data) {
+          if (data.image_url) {
+            renderFirstFrame($panel, data.image_url);
+          }
+          if (typeof Peliku !== "undefined" && Peliku.Toast) {
+            Peliku.Toast.show("First frame uploaded", "success");
+          }
+        },
+        error: function (xhr) {
+          var msg = "Upload failed.";
+          try {
+            var body = JSON.parse(xhr.responseText);
+            if (body.error) {
+              msg = body.error;
+            }
+          } catch (e) {
+            /* use default */
+          }
+          if (typeof Peliku !== "undefined" && Peliku.Toast) {
+            Peliku.Toast.show(msg, "error");
+          }
+        },
+      });
+
+      $input.val("");
+    });
+  }
+
+  /**
+   * Bind the "Use Previous Clip's Last Frame" button.
+   */
+  function bindFirstFrameFromPrev() {
+    $(document).on("click", ".js-first-frame-from-prev", function () {
+      var $btn = $(this);
+      var $panel = $btn.closest(".js-first-frame-panel");
+      var clipId = $panel.data("clip-id");
+
+      $btn.prop("disabled", true);
+
+      $.ajax({
+        url: "/api/clips/" + clipId + "/set-first-frame/",
+        method: "POST",
+        contentType: "application/json",
+        headers: { "X-CSRFToken": getCsrfToken() },
+        data: JSON.stringify({ source: "previous_clip" }),
+        success: function (data) {
+          if (data.image_url) {
+            renderFirstFrame($panel, data.image_url);
+          }
+          $btn.prop("disabled", false);
+          if (typeof Peliku !== "undefined" && Peliku.Toast) {
+            Peliku.Toast.show("First frame set from previous clip", "success");
+          }
+        },
+        error: function (xhr) {
+          $btn.prop("disabled", false);
+          var msg = "Could not set first frame from previous clip.";
+          try {
+            var body = JSON.parse(xhr.responseText);
+            if (body.error) {
+              msg = body.error;
+            }
+          } catch (e) {
+            /* use default */
+          }
+          if (typeof Peliku !== "undefined" && Peliku.Toast) {
+            Peliku.Toast.show(msg, "error");
+          }
+        },
+      });
+    });
+  }
+
   return {
     init: function () {
       bindRefPanelToggle();
       bindScriptCharCount();
       bindAutoSave();
       bindGenerateVideo();
+      bindGenMethodChange();
+      bindFirstFrameGenerate();
+      bindFirstFrameUpload();
+      bindFirstFrameFromPrev();
       bindRefGenerate();
       bindRefUpload();
       bindRefRemove();

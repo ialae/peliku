@@ -275,14 +275,62 @@
                         <label class="form-label" for="gen-method-{{ clip.sequence_number }}">Generation Method</label>
                         <select
                             id="gen-method-{{ clip.sequence_number }}"
-                            class="form-select"
-                            disabled
+                            class="form-select js-gen-method"
                             aria-label="Generation method for clip {{ clip.sequence_number }}"
                         >
-                            <option value="text_to_video" selected>Text-to-Video</option>
-                            <option value="image_to_video">Image-to-Video</option>
-                            <option value="frame_interpolation">Frame Interpolation</option>
+                            <option value="text_to_video" {% if clip.generation_method == "text_to_video" %}selected{% endif %}>Text-to-Video</option>
+                            <option value="image_to_video" {% if clip.generation_method == "image_to_video" %}selected{% endif %}>Image-to-Video</option>
+                            <option value="frame_interpolation" {% if clip.generation_method == "frame_interpolation" %}selected{% endif %}>Frame Interpolation</option>
                         </select>
+                    </div>
+
+                    {# ── First Frame Sub-Panel (Image-to-Video) ── #}
+                    <div class="first-frame-panel js-first-frame-panel {% if clip.generation_method != 'image_to_video' %}hidden{% endif %}" data-clip-id="{{ clip.pk }}">
+                        <span class="form-label">First Frame</span>
+                        <div class="first-frame-panel__preview js-first-frame-preview">
+                            {% if clip.first_frame %}
+                            <img
+                                src="{{ clip.first_frame.url }}"
+                                alt="First frame for clip {{ clip.sequence_number }}"
+                                class="first-frame-panel__img"
+                            >
+                            {% else %}
+                            <div class="first-frame-panel__empty">
+                                <i class="ph ph-image" aria-hidden="true"></i>
+                                <span class="body-small">No first frame set</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="first-frame-panel__actions">
+                            <button
+                                type="button"
+                                class="btn btn--secondary btn--sm js-first-frame-generate"
+                                aria-label="Generate first frame for clip {{ clip.sequence_number }}"
+                            >
+                                <i class="ph ph-sparkle" aria-hidden="true"></i>
+                                Generate Image
+                            </button>
+                            <label class="btn btn--secondary btn--sm js-first-frame-upload-label">
+                                <i class="ph ph-upload-simple" aria-hidden="true"></i>
+                                Upload Image
+                                <input
+                                    type="file"
+                                    class="visually-hidden js-first-frame-upload-input"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    aria-label="Upload first frame for clip {{ clip.sequence_number }}"
+                                >
+                            </label>
+                            {% if clip.sequence_number > 1 %}
+                            <button
+                                type="button"
+                                class="btn btn--ghost btn--sm js-first-frame-from-prev"
+                                aria-label="Use previous clip's last frame for clip {{ clip.sequence_number }}"
+                            >
+                                <i class="ph ph-arrow-bend-up-left" aria-hidden="true"></i>
+                                Use Previous Clip's Last Frame
+                            </button>
+                            {% endif %}
+                        </div>
                     </div>
 
                     {# ── Per-Clip Reference Selection ── #}
