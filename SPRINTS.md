@@ -691,7 +691,7 @@ Never run global `pip install` commands. Always activate `.venv` first, then use
   - `source .venv/Scripts/activate && python -m pytest core/tests/test_video_generation.py --tb=short -q` — video generation tests pass
   - `source .venv/Scripts/activate && python -m pytest --tb=short -q` — full suite passes
   - `source .venv/Scripts/activate && make lint` — lint passes
-  - Generate endpoint responds: start server, seed data, `curl --fail --silent -X POST http://localhost:8000/api/clips/1/generate-video/ -H "Content-Type: application/json" -w "%{http_code}" | grep -qE "200|202"`, stop server
+  - Generate endpoint responds: start server, seed data, resolve first clip pk dynamically, `curl --fail --silent -X POST http://localhost:8000/api/clips/$CLIP_ID/generate-video/ -H "Content-Type: application/json" -w "%{http_code}" | grep -qE "200|202"`, stop server
 
 - **Makefile target name**: `checksprint14`
 
@@ -1566,7 +1566,8 @@ checksprint14:
 	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
-		curl --fail --silent -X POST http://localhost:8000/api/clips/1/generate-video/ \
+		CLIP_ID=$$(DJANGO_SETTINGS_MODULE=peliku.settings python -c "import django; django.setup(); from core.models import Clip; print(Clip.objects.first().pk)") && \
+		curl --fail --silent -X POST http://localhost:8000/api/clips/$${CLIP_ID}/generate-video/ \
 			-H "Content-Type: application/json" -w "%{http_code}" -o /dev/null | grep -qE "200|202" ; \
 		EXIT=$$? ; kill $$RF_PID 2>/dev/null ; exit $$EXIT
 
@@ -1578,7 +1579,8 @@ checksprint15:
 	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
-		curl --fail --silent -X POST http://localhost:8000/api/projects/1/references/upload/ \
+		PROJ_ID=$$(DJANGO_SETTINGS_MODULE=peliku.settings python -c "import django; django.setup(); from core.models import Project; print(Project.objects.first().pk)") && \
+		curl --fail --silent -X POST http://localhost:8000/api/projects/$${PROJ_ID}/references/upload/ \
 			-F "slot_number=1" -F "label=Test" -F "image=@static/images/placeholder.png" \
 			-w "%{http_code}" -o /dev/null | grep -qE "200|201|400" ; \
 		EXIT=$$? ; kill $$RF_PID 2>/dev/null ; exit $$EXIT
@@ -1591,7 +1593,8 @@ checksprint16:
 	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
-		curl --fail --silent -X POST http://localhost:8000/api/clips/1/set-first-frame/ \
+		CLIP_ID=$$(DJANGO_SETTINGS_MODULE=peliku.settings python -c "import django; django.setup(); from core.models import Clip; print(Clip.objects.first().pk)") && \
+		curl --fail --silent -X POST http://localhost:8000/api/clips/$${CLIP_ID}/set-first-frame/ \
 			-H "Content-Type: application/json" -d '{"source":"generate"}' \
 			-w "%{http_code}" -o /dev/null | grep -qE "200|202" ; \
 		EXIT=$$? ; kill $$RF_PID 2>/dev/null ; exit $$EXIT
@@ -1604,7 +1607,8 @@ checksprint17:
 	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
-		curl --fail --silent -X POST http://localhost:8000/api/clips/1/set-last-frame/ \
+		CLIP_ID=$$(DJANGO_SETTINGS_MODULE=peliku.settings python -c "import django; django.setup(); from core.models import Clip; print(Clip.objects.first().pk)") && \
+		curl --fail --silent -X POST http://localhost:8000/api/clips/$${CLIP_ID}/set-last-frame/ \
 			-H "Content-Type: application/json" -d '{"source":"generate"}' \
 			-w "%{http_code}" -o /dev/null | grep -qE "200|202" ; \
 		EXIT=$$? ; kill $$RF_PID 2>/dev/null ; exit $$EXIT
