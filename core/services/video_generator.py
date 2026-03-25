@@ -260,3 +260,181 @@ def generate_text_to_video(clip):
             clip.project.title,
         )
         raise RuntimeError(f"Video generation failed: {exc}") from exc
+
+
+def _ensure_frames_dir():
+    """Ensure the media/images/frames directory exists.
+
+    Returns:
+        Path: The absolute path to media/images/frames/.
+    """
+    frames_dir = Path(settings.MEDIA_ROOT) / "images" / "frames"
+    frames_dir.mkdir(parents=True, exist_ok=True)
+    return frames_dir
+
+
+def generate_first_frame_image(clip):
+    """Generate a first-frame image for a clip using the Gemini image API.
+
+    Creates an image from the clip's script suitable for use as
+    a starting frame in Image-to-Video generation.
+
+    Args:
+        clip: A Clip model instance with script_text populated.
+
+    Returns:
+        str: Relative file path to the generated frame image.
+
+    Raises:
+        ValueError: If the clip has no script text.
+        RuntimeError: If image generation fails.
+    """
+    if not clip.script_text.strip():
+        raise ValueError("Clip has no script text for frame generation.")
+
+    from core.services.image_generator import (
+        IMAGE_MODEL,
+        _extract_image_part,
+    )
+
+    client = get_ai_client()
+    prompt = (
+        f"Generate a cinematic still frame for the opening moment "
+        f"of this video clip: {clip.script_text}"
+    )
+
+    config = types.GenerateContentConfig(
+        response_modalities=["IMAGE"],
+        image_config=types.ImageConfig(
+            image_size="1K",
+            aspect_ratio=clip.project.aspect_ratio.replace(":", ":"),
+        ),
+    )
+
+    response = client.models.generate_content(
+        model=IMAGE_MODEL,
+        contents=prompt,
+        config=config,
+    )
+
+    image_part = _extract_image_part(response)
+
+    frames_dir = _ensure_frames_dir()
+    filename = f"first_{clip.project.pk}_{clip.sequence_number}.png"
+    filepath = frames_dir / filename
+
+    filepath.write_bytes(image_part.inline_data.data)
+
+    relative_path = f"images/frames/{filename}"
+    clip.first_frame = relative_path
+    clip.save(update_fields=["first_frame"])
+
+    logger.info(
+        "First frame generated for Clip %s of Project '%s'.",
+        clip.sequence_number,
+        clip.project.title,
+    )
+    return relative_path
+
+
+def generate_image_to_video(clip):
+    """Generate a video for a clip using the Image-to-Video method.
+
+    Calls the Veo API with the clip's first_frame image as the
+    starting frame and the clip's script as the prompt.
+
+    Args:
+        clip: A Clip model instance with first_frame and script_text set.
+
+    Returns:
+        dict: Result data with video_url and clip_id.
+
+    Raises:
+        ValueError: If the clip has no first frame or no script text.
+        RuntimeError: If generation or download fails.
+    """
+    if not clip.script_text.strip():
+        clip.generation_status = "failed"
+        clip.save(update_fields=["generation_status"])
+        raise ValueError("Clip has no script text for video generation.")
+
+    if not clip.first_frame or not clip.first_frame.name:
+        clip.generation_status = "failed"
+        clip.save(update_fields=["generation_status"])
+        raise ValueError("Clip has no first frame set for Image-to-Video.")
+
+    first_frame_path = Path(settings.MEDIA_ROOT) / clip.first_frame.name
+    if not first_frame_path.exists():
+        clip.generation_status = "failed"
+        clip.save(update_fields=["generation_status"])
+        raise ValueError(f"First frame file not found: {clip.first_frame.name}")
+
+    clip.generation_status = "generating"
+    clip.save(update_fields=["generation_status"])
+
+    try:
+        client = get_ai_client()
+        user_settings = _get_user_settings()
+        config = _build_video_config(clip, user_settings)
+        model_name = _get_veo_model(user_settings["generation_speed"])
+
+        ref_images = _build_reference_images(clip)
+        if ref_images:
+            config.reference_images = ref_images
+
+        image_bytes = first_frame_path.read_bytes()
+        image_part = types.Part.from_bytes(
+            data=image_bytes,
+            mime_type="image/png",
+        )
+
+        operation = client.models.generate_videos(
+            model=model_name,
+            prompt=clip.script_text,
+            image=image_part,
+            config=config,
+        )
+
+        operation = _poll_operation(client, operation)
+
+        generated_video = operation.response.generated_videos[0]
+
+        videos_dir = _ensure_videos_dir()
+        filename = f"clip_{clip.project.pk}_{clip.sequence_number}.mp4"
+        filepath = videos_dir / filename
+
+        client.files.download(file=generated_video.video)
+        generated_video.video.save(str(filepath))
+
+        relative_path = f"videos/{filename}"
+        clip.video_file = relative_path
+        clip.generation_status = "completed"
+        clip.generation_reference_id = getattr(operation, "name", "")
+        clip.save(
+            update_fields=[
+                "video_file",
+                "generation_status",
+                "generation_reference_id",
+            ]
+        )
+
+        logger.info(
+            "Image-to-Video generated for Clip %s of Project '%s'.",
+            clip.sequence_number,
+            clip.project.title,
+        )
+
+        return {
+            "clip_id": clip.pk,
+            "video_url": f"/{settings.MEDIA_URL}{relative_path}",
+        }
+
+    except Exception as exc:
+        clip.generation_status = "failed"
+        clip.save(update_fields=["generation_status"])
+        logger.exception(
+            "Image-to-Video failed for Clip %s of Project '%s'.",
+            clip.sequence_number,
+            clip.project.title,
+        )
+        raise RuntimeError(f"Image-to-Video generation failed: {exc}") from exc

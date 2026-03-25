@@ -14,7 +14,11 @@ from core.models import Clip, Project, ReferenceImage, Task, UserSettings
 from core.services.image_generator import generate_reference_image
 from core.services.script_generator import generate_all_scripts
 from core.services.task_runner import run_in_background
-from core.services.video_generator import generate_text_to_video
+from core.services.video_generator import (
+    generate_first_frame_image,
+    generate_image_to_video,
+    generate_text_to_video,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -304,6 +308,42 @@ def api_update_clip_script(request, clip_id):
     return JsonResponse({"status": "updated", "clip_id": clip.pk})
 
 
+VALID_METHODS = {
+    "text_to_video",
+    "image_to_video",
+    "frame_interpolation",
+    "extend_previous",
+}
+
+
+@csrf_exempt
+@require_POST
+def api_update_generation_method(request, clip_id):
+    """Update a clip's generation method.
+
+    POST /api/clips/<id>/update-method/
+    Body JSON: {"method": "image_to_video"}
+    """
+    clip = get_object_or_404(Clip, pk=clip_id)
+
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid JSON."}, status=400)
+
+    method = body.get("method", "").strip()
+    if method not in VALID_METHODS:
+        return JsonResponse(
+            {"error": f"method must be one of: {', '.join(sorted(VALID_METHODS))}."},
+            status=400,
+        )
+
+    clip.generation_method = method
+    clip.save(update_fields=["generation_method"])
+
+    return JsonResponse({"status": "updated", "clip_id": clip.pk, "method": method})
+
+
 def api_task_status(request, task_id):
     """Return the current status of a background task as JSON.
 
@@ -340,6 +380,9 @@ def api_generate_video(request, clip_id):
 
     POST /api/clips/<id>/generate-video/
 
+    Dispatches to the appropriate generator based on clip.generation_method.
+    Accepts optional JSON body {"method": "text_to_video"} to override.
+
     Returns JSON {"task_id": <int>} with HTTP 202 on success.
     """
     clip = get_object_or_404(Clip, pk=clip_id)
@@ -356,15 +399,55 @@ def api_generate_video(request, clip_id):
             status=400,
         )
 
+    method = clip.generation_method
+    try:
+        body = json.loads(request.body) if request.body else {}
+        if "method" in body:
+            method = body["method"]
+    except (json.JSONDecodeError, ValueError):
+        pass
+
+    generator_func = _get_generator_for_method(method)
+    if generator_func is None:
+        return JsonResponse(
+            {"error": f"Unknown generation method: {method}"},
+            status=400,
+        )
+
+    if method == "image_to_video":
+        if not clip.first_frame or not clip.first_frame.name:
+            return JsonResponse(
+                {"error": "Set a first frame before using Image-to-Video."},
+                status=400,
+            )
+
     task_id = run_in_background(
         "video_generation",
-        generate_text_to_video,
+        generator_func,
         clip,
         related_object_id=clip.pk,
         related_object_type="clip",
     )
 
     return JsonResponse({"task_id": task_id}, status=202)
+
+
+VALID_GENERATION_METHODS = {
+    "text_to_video": generate_text_to_video,
+    "image_to_video": generate_image_to_video,
+}
+
+
+def _get_generator_for_method(method):
+    """Return the generator function for a given method name.
+
+    Args:
+        method: The generation method string.
+
+    Returns:
+        callable or None: The generator function, or None if invalid.
+    """
+    return VALID_GENERATION_METHODS.get(method)
 
 
 # ── Reference Images ─────────────────────────────────────────────────────────
@@ -598,3 +681,165 @@ def api_update_clip_references(request, clip_id):
     clip.save(update_fields=["selected_references"])
 
     return JsonResponse({"status": "updated", "reference_ids": sanitized})
+
+
+# ── First Frame Management ───────────────────────────────────────────────────
+
+FIRST_FRAME_SOURCES = {"generate", "upload", "previous_clip"}
+
+
+@csrf_exempt
+@require_POST
+def api_set_first_frame(request, clip_id):
+    """Set the first frame for a clip.
+
+    POST /api/clips/<id>/set-first-frame/
+
+    Accepts either:
+    - JSON {"source": "generate"} — generates a frame from the script
+    - JSON {"source": "previous_clip"} — copies previous clip's last frame
+    - Multipart form with "source": "upload" and "image" file
+    """
+    clip = get_object_or_404(Clip, pk=clip_id)
+
+    content_type = request.content_type or ""
+
+    if "multipart" in content_type:
+        return _handle_first_frame_upload(request, clip)
+
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid JSON."}, status=400)
+
+    source = body.get("source", "").strip()
+    if source not in FIRST_FRAME_SOURCES:
+        valid_sources = ", ".join(sorted(FIRST_FRAME_SOURCES))
+        return JsonResponse(
+            {"error": f"source must be one of: {valid_sources}."},
+            status=400,
+        )
+
+    if source == "generate":
+        return _handle_first_frame_generate(clip)
+
+    if source == "previous_clip":
+        return _handle_first_frame_from_previous(clip)
+
+    return JsonResponse({"error": "Invalid source."}, status=400)
+
+
+def _handle_first_frame_generate(clip):
+    """Generate a first-frame image via AI in the background."""
+    if not clip.script_text.strip():
+        return JsonResponse(
+            {"error": "Clip has no script text for frame generation."},
+            status=400,
+        )
+
+    task_id = run_in_background(
+        "first_frame_generation",
+        _generate_and_save_first_frame,
+        clip,
+        related_object_id=clip.pk,
+        related_object_type="clip",
+    )
+
+    return JsonResponse({"task_id": task_id}, status=202)
+
+
+def _generate_and_save_first_frame(clip):
+    """Background task: generate first frame image and save to clip.
+
+    Args:
+        clip: A Clip model instance.
+
+    Returns:
+        dict: Result with image_url and clip_id.
+    """
+    relative_path = generate_first_frame_image(clip)
+    return {
+        "clip_id": clip.pk,
+        "image_url": f"/{settings.MEDIA_URL}{relative_path}",
+    }
+
+
+def _handle_first_frame_from_previous(clip):
+    """Copy the previous clip's last frame as this clip's first frame."""
+    if clip.sequence_number <= 1:
+        return JsonResponse(
+            {"error": "No previous clip exists for clip 1."},
+            status=400,
+        )
+
+    previous_clip = Clip.objects.filter(
+        project=clip.project,
+        sequence_number=clip.sequence_number - 1,
+    ).first()
+
+    if not previous_clip:
+        return JsonResponse(
+            {"error": "Previous clip not found."},
+            status=404,
+        )
+
+    if not previous_clip.last_frame or not previous_clip.last_frame.name:
+        return JsonResponse(
+            {"error": "Previous clip has no last frame set."},
+            status=400,
+        )
+
+    from pathlib import Path
+
+    from django.core.files.base import ContentFile
+
+    source_path = Path(settings.MEDIA_ROOT) / previous_clip.last_frame.name
+    if not source_path.exists():
+        return JsonResponse(
+            {"error": "Previous clip's last frame file not found."},
+            status=404,
+        )
+
+    content = source_path.read_bytes()
+    filename = f"first_{clip.project.pk}_{clip.sequence_number}" f"_from_prev.png"
+    clip.first_frame.save(filename, ContentFile(content), save=True)
+
+    return JsonResponse(
+        {
+            "status": "set",
+            "clip_id": clip.pk,
+            "image_url": clip.first_frame.url,
+        }
+    )
+
+
+def _handle_first_frame_upload(request, clip):
+    """Handle multipart upload of a first-frame image."""
+    image = request.FILES.get("image")
+    if not image:
+        return JsonResponse(
+            {"error": "image file is required."},
+            status=400,
+        )
+
+    if image.content_type not in ALLOWED_IMAGE_TYPES:
+        return JsonResponse(
+            {"error": "Image must be JPEG, PNG, or WebP."},
+            status=400,
+        )
+
+    if image.size > MAX_IMAGE_SIZE_BYTES:
+        return JsonResponse(
+            {"error": "Image must be 10 MB or smaller."},
+            status=400,
+        )
+
+    clip.first_frame.save(image.name, image, save=True)
+
+    return JsonResponse(
+        {
+            "status": "set",
+            "clip_id": clip.pk,
+            "image_url": clip.first_frame.url,
+        }
+    )
