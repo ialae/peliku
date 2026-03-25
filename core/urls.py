@@ -44,4 +44,24 @@ urlpatterns = [
         views.api_generate_video,
         name="api_generate_video",
     ),
+    path(
+        "api/projects/<int:project_id>/references/generate/",
+        views.api_generate_reference,
+        name="api_generate_reference",
+    ),
+    path(
+        "api/projects/<int:project_id>/references/upload/",
+        views.api_upload_reference,
+        name="api_upload_reference",
+    ),
+    path(
+        "api/projects/<int:project_id>/references/<int:slot_number>/delete/",
+        views.api_delete_reference,
+        name="api_delete_reference",
+    ),
+    path(
+        "api/clips/<int:clip_id>/update-references/",
+        views.api_update_clip_references,
+        name="api_update_clip_references",
+    ),
 ]

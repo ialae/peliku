@@ -161,6 +161,139 @@
     text-align: center;
 }
 
+/* ─── Reference Slot: Filled State ────────────────────────── */
+
+.ref-slot__preview--filled {
+    position: relative;
+    border-style: solid;
+    border-color: var(--color-primary-500);
+}
+
+.ref-slot__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+}
+
+.ref-slot__remove {
+    position: absolute;
+    top: var(--space-1);
+    right: var(--space-1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-neutral-900);
+    color: var(--color-neutral-200);
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-default),
+        background-color var(--duration-fast) var(--ease-default);
+    cursor: pointer;
+}
+
+.ref-slot__preview--filled:hover .ref-slot__remove {
+    opacity: 1;
+}
+
+.ref-slot__remove:hover {
+    background-color: var(--color-error-600);
+    color: var(--color-neutral-50);
+}
+
+.ref-slot__label-input {
+    width: 100%;
+    text-align: center;
+    font-size: var(--text-xs);
+}
+
+/* ─── Reference Slot: Empty Actions ───────────────────────── */
+
+.ref-slot__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+}
+
+.ref-slot__empty.hidden {
+    display: none;
+}
+
+.ref-slot__actions {
+    display: flex;
+    gap: var(--space-2);
+    width: 100%;
+}
+
+.ref-slot__actions .btn {
+    flex: 1;
+    font-size: var(--text-xs);
+    padding: var(--space-1) var(--space-2);
+}
+
+/* ─── Per-Clip Reference Selection ────────────────────────── */
+
+.clip-refs {
+    margin-top: var(--space-2);
+}
+
+.clip-refs__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-2);
+}
+
+.clip-refs__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.clip-refs__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-default);
+}
+
+.clip-refs__item:hover {
+    background-color: var(--color-surface-hover);
+}
+
+.clip-refs__checkbox {
+    flex-shrink: 0;
+    accent-color: var(--color-primary-500);
+}
+
+.clip-refs__thumb {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.clip-refs__name {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.clip-refs__empty {
+    color: var(--color-text-secondary);
+    font-style: italic;
+}
+
 /* ─── Clip List ───────────────────────────────────────────── */
 
 .clip-list {

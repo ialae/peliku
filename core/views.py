@@ -3,6 +3,7 @@
 import json
 import logging
 
+from django.conf import settings
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
@@ -10,6 +11,7 @@ from django.views.decorators.http import require_POST
 
 from core.forms import ProjectForm
 from core.models import Clip, Project, ReferenceImage, Task, UserSettings
+from core.services.image_generator import generate_reference_image
 from core.services.script_generator import generate_all_scripts
 from core.services.task_runner import run_in_background
 from core.services.video_generator import generate_text_to_video
@@ -130,10 +132,12 @@ def workspace(request, project_id):
     """Render the Project Workspace page with real project data."""
     project = get_object_or_404(Project, pk=project_id)
     clips = project.clips.all().order_by("sequence_number")
+    references = project.reference_images.all().order_by("slot_number")
 
     context = {
         "project": project,
         "clips": clips,
+        "references": references,
     }
     return render(request, "core/workspace.html", context)
 
@@ -361,3 +365,236 @@ def api_generate_video(request, clip_id):
     )
 
     return JsonResponse({"task_id": task_id}, status=202)
+
+
+# ── Reference Images ─────────────────────────────────────────────────────────
+
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
+MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
+MAX_SLOTS = 3
+
+
+@csrf_exempt
+@require_POST
+def api_generate_reference(request, project_id):
+    """Generate a reference image via AI and save it to a slot.
+
+    POST /api/projects/<id>/references/generate/
+    Body JSON: {"slot_number": 1, "prompt": "...", "label": "..."}
+    """
+    project = get_object_or_404(Project, pk=project_id)
+
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid JSON."}, status=400)
+
+    slot_number = body.get("slot_number")
+    prompt = body.get("prompt", "").strip()
+    label = body.get("label", "").strip()
+
+    validation_error = _validate_reference_input(slot_number, prompt, label)
+    if validation_error:
+        return validation_error
+
+    task_id = run_in_background(
+        "reference_image_generation",
+        _generate_and_save_reference,
+        project,
+        slot_number,
+        prompt,
+        label,
+        related_object_id=project.pk,
+        related_object_type="project",
+    )
+
+    return JsonResponse({"task_id": task_id}, status=202)
+
+
+def _validate_reference_input(slot_number, prompt, label):
+    """Return a JsonResponse on validation failure, or None if valid."""
+    if not isinstance(slot_number, int) or slot_number not in (1, 2, 3):
+        return JsonResponse(
+            {"error": "slot_number must be 1, 2, or 3."},
+            status=400,
+        )
+    if not prompt:
+        return JsonResponse({"error": "prompt is required."}, status=400)
+    if not label:
+        return JsonResponse({"error": "label is required."}, status=400)
+    if len(label) > 100:
+        return JsonResponse(
+            {"error": "label must be 100 characters or fewer."},
+            status=400,
+        )
+    return None
+
+
+def _generate_and_save_reference(project, slot_number, prompt, label):
+    """Background task: generate image, create/update ReferenceImage record.
+
+    Args:
+        project: Project instance.
+        slot_number: Slot 1-3.
+        prompt: AI prompt for image generation.
+        label: Human label for the reference.
+
+    Returns:
+        dict: Result with image_url, label, and slot_number.
+    """
+    relative_path = generate_reference_image(prompt, project.pk, slot_number)
+
+    ref, _ = ReferenceImage.objects.update_or_create(
+        project=project,
+        slot_number=slot_number,
+        defaults={
+            "image_file": relative_path,
+            "label": label,
+        },
+    )
+
+    return {
+        "id": ref.pk,
+        "slot_number": ref.slot_number,
+        "label": ref.label,
+        "image_url": f"/{settings.MEDIA_URL}{relative_path}",
+    }
+
+
+@csrf_exempt
+@require_POST
+def api_upload_reference(request, project_id):
+    """Upload a reference image file to a slot.
+
+    POST /api/projects/<id>/references/upload/
+    Multipart form: slot_number, label, image (file).
+    """
+    project = get_object_or_404(Project, pk=project_id)
+
+    slot_number = request.POST.get("slot_number")
+    label = request.POST.get("label", "").strip()
+    image = request.FILES.get("image")
+
+    try:
+        slot_number = int(slot_number) if slot_number else None
+    except (TypeError, ValueError):
+        return JsonResponse(
+            {"error": "slot_number must be an integer."},
+            status=400,
+        )
+
+    if not isinstance(slot_number, int) or slot_number not in (1, 2, 3):
+        return JsonResponse(
+            {"error": "slot_number must be 1, 2, or 3."},
+            status=400,
+        )
+
+    if not label:
+        return JsonResponse({"error": "label is required."}, status=400)
+
+    if len(label) > 100:
+        return JsonResponse(
+            {"error": "label must be 100 characters or fewer."},
+            status=400,
+        )
+
+    if not image:
+        return JsonResponse({"error": "image file is required."}, status=400)
+
+    if image.content_type not in ALLOWED_IMAGE_TYPES:
+        return JsonResponse(
+            {"error": "Image must be JPEG, PNG, or WebP."},
+            status=400,
+        )
+
+    if image.size > MAX_IMAGE_SIZE_BYTES:
+        return JsonResponse(
+            {"error": "Image must be 10 MB or smaller."},
+            status=400,
+        )
+
+    ref, _ = ReferenceImage.objects.update_or_create(
+        project=project,
+        slot_number=slot_number,
+        defaults={"label": label},
+    )
+    ref.image_file.save(image.name, image, save=True)
+
+    return JsonResponse(
+        {
+            "id": ref.pk,
+            "slot_number": ref.slot_number,
+            "label": ref.label,
+            "image_url": ref.image_file.url,
+        },
+        status=201,
+    )
+
+
+@csrf_exempt
+@require_POST
+def api_delete_reference(request, project_id, slot_number):
+    """Delete a reference image slot and remove file from disk.
+
+    DELETE /api/projects/<id>/references/<slot>/
+    """
+    project = get_object_or_404(Project, pk=project_id)
+
+    try:
+        ref = ReferenceImage.objects.get(project=project, slot_number=slot_number)
+    except ReferenceImage.DoesNotExist:
+        return JsonResponse({"error": "Reference slot is empty."}, status=404)
+
+    if ref.image_file and ref.image_file.name:
+        try:
+            ref.image_file.delete(save=False)
+        except Exception:
+            logger.warning("Failed to delete ref image file: %s", ref.image_file.name)
+
+    ref_pk = ref.pk
+    ref.delete()
+
+    _remove_deleted_ref_from_clips(project, ref_pk)
+
+    return JsonResponse({"status": "deleted", "slot_number": slot_number})
+
+
+def _remove_deleted_ref_from_clips(project, deleted_ref_pk):
+    """Remove a deleted reference PK from all clips' selected_references."""
+    for clip in project.clips.all():
+        if deleted_ref_pk in clip.selected_references:
+            clip.selected_references = [
+                pk for pk in clip.selected_references if pk != deleted_ref_pk
+            ]
+            clip.save(update_fields=["selected_references"])
+
+
+@csrf_exempt
+@require_POST
+def api_update_clip_references(request, clip_id):
+    """Update which reference images are selected for a clip.
+
+    POST /api/clips/<id>/update-references/
+    Body JSON: {"reference_ids": [1, 3]}
+    """
+    clip = get_object_or_404(Clip, pk=clip_id)
+
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid JSON."}, status=400)
+
+    reference_ids = body.get("reference_ids")
+    if not isinstance(reference_ids, list):
+        return JsonResponse(
+            {"error": "reference_ids must be a list."},
+            status=400,
+        )
+
+    valid_ids = set(clip.project.reference_images.values_list("pk", flat=True))
+    sanitized = [rid for rid in reference_ids if rid in valid_ids]
+
+    clip.selected_references = sanitized
+    clip.save(update_fields=["selected_references"])
+
+    return JsonResponse({"status": "updated", "reference_ids": sanitized})
