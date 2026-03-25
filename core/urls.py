@@ -39,4 +39,9 @@ urlpatterns = [
         views.api_task_status,
         name="api_task_status",
     ),
+    path(
+        "api/clips/<int:clip_id>/generate-video/",
+        views.api_generate_video,
+        name="api_generate_video",
+    ),
 ]

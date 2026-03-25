@@ -2,7 +2,7 @@
  * Workspace JS — Peliku
  * jQuery handlers for the Project Workspace page.
  * Handles Reference Images Panel toggle, inline script editing,
- * auto-save via AJAX, and live character counts.
+ * auto-save via AJAX, live character counts, and video generation.
  */
 
 const Workspace = (function ($) {
@@ -14,6 +14,9 @@ const Workspace = (function ($) {
 
   /* ── Debounce timers keyed by clip ID ── */
   var debounceTimers = {};
+
+  /* ── Generation timers keyed by clip ID ── */
+  var genTimers = {};
 
   /**
    * Retrieve the CSRF token from the hidden csrf_token input in the page.
@@ -139,11 +142,174 @@ const Workspace = (function ($) {
     });
   }
 
+  /* ── Video Generation ── */
+
+  /**
+   * Switch the visible state panel within a clip card's right column.
+   * @param {jQuery} $right - The .clip-card__right element.
+   * @param {string} state - One of "idle", "generating", "completed", "failed".
+   */
+  function showState($right, state) {
+    $right.find(".clip-card__state").addClass("hidden");
+    $right.find(".clip-card__state--" + state).removeClass("hidden");
+    $right.attr("data-status", state);
+  }
+
+  /**
+   * Start the elapsed-time counter for a generating clip.
+   * @param {jQuery} $right - The .clip-card__right element.
+   * @param {number} clipId - The clip primary key.
+   */
+  function startGenTimer($right, clipId) {
+    stopGenTimer(clipId);
+    var startTime = Date.now();
+    var $timer = $right.find(".js-gen-timer");
+
+    genTimers[clipId] = setInterval(function () {
+      var elapsed = Math.floor((Date.now() - startTime) / 1000);
+      var minutes = Math.floor(elapsed / 60);
+      var seconds = elapsed % 60;
+      $timer.text(minutes + ":" + (seconds < 10 ? "0" : "") + seconds);
+    }, 1000);
+  }
+
+  /**
+   * Stop the elapsed-time counter for a clip.
+   * @param {number} clipId - The clip primary key.
+   */
+  function stopGenTimer(clipId) {
+    if (genTimers[clipId]) {
+      clearInterval(genTimers[clipId]);
+      delete genTimers[clipId];
+    }
+  }
+
+  /**
+   * Trigger video generation for a clip.
+   * @param {jQuery} $card - The .clip-card article element.
+   */
+  function generateVideo($card) {
+    var clipId = $card.data("clip-id");
+    var clipNum = $card.data("clip");
+    var $right = $card.find(".clip-card__right");
+
+    showState($right, "generating");
+    startGenTimer($right, clipId);
+
+    $.ajax({
+      url: "/api/clips/" + clipId + "/generate-video/",
+      method: "POST",
+      contentType: "application/json",
+      headers: { "X-CSRFToken": getCsrfToken() },
+      data: JSON.stringify({}),
+      success: function (data) {
+        TaskPoller.pollTask(data.task_id, {
+          onProgress: function () {
+            /* Timer is already running — nothing extra needed */
+          },
+          onComplete: function (taskData) {
+            stopGenTimer(clipId);
+            handleGenerationComplete($card, $right, clipNum, taskData);
+          },
+          onError: function (taskData) {
+            stopGenTimer(clipId);
+            handleGenerationFailed($right, taskData);
+          },
+        });
+      },
+      error: function (xhr) {
+        stopGenTimer(clipId);
+        var msg = "Could not start video generation.";
+        try {
+          var body = JSON.parse(xhr.responseText);
+          if (body.error) {
+            msg = body.error;
+          }
+        } catch (e) {
+          /* use default message */
+        }
+        $right.find(".js-error-text").text(msg);
+        showState($right, "failed");
+      },
+    });
+  }
+
+  /**
+   * Handle successful video generation: update UI with video player.
+   * @param {jQuery} $card - The clip card element.
+   * @param {jQuery} $right - The right panel element.
+   * @param {number} clipNum - The clip sequence number.
+   * @param {Object} taskData - Task result data from the poller.
+   */
+  function handleGenerationComplete($card, $right, clipNum, taskData) {
+    var videoUrl = "";
+    if (taskData.result_data && taskData.result_data.video_url) {
+      videoUrl = taskData.result_data.video_url;
+    }
+
+    var $completed = $right.find(".clip-card__state--completed");
+    $completed.find(".js-clip-video, .clip-card__video-placeholder").remove();
+
+    if (videoUrl) {
+      var $video = $(
+        '<video class="clip-card__video js-clip-video" muted autoplay loop playsinline></video>'
+      );
+      $video.attr("src", videoUrl);
+      $video.attr(
+        "aria-label",
+        "Generated video for clip " + clipNum
+      );
+      $completed
+        .find(".btn")
+        .first()
+        .before($video);
+    }
+
+    showState($right, "completed");
+
+    if (typeof Peliku !== "undefined" && Peliku.Toast) {
+      Peliku.Toast.show(
+        "Clip " + clipNum + " generated successfully",
+        "success"
+      );
+    }
+  }
+
+  /**
+   * Handle failed video generation: show error message.
+   * @param {jQuery} $right - The right panel element.
+   * @param {Object} taskData - Task data from the poller.
+   */
+  function handleGenerationFailed($right, taskData) {
+    var errorMsg =
+      "We couldn\u2019t generate this video. Try adjusting the script and click Retry.";
+    if (taskData.error_message) {
+      errorMsg = taskData.error_message;
+    }
+    $right.find(".js-error-text").text(errorMsg);
+    showState($right, "failed");
+
+    if (typeof Peliku !== "undefined" && Peliku.Toast) {
+      Peliku.Toast.show("Video generation failed", "error");
+    }
+  }
+
+  /**
+   * Bind click handlers for all Generate Video / Regenerate / Retry buttons.
+   */
+  function bindGenerateVideo() {
+    $(document).on("click", ".js-generate-video", function () {
+      var $card = $(this).closest(".clip-card");
+      generateVideo($card);
+    });
+  }
+
   return {
     init: function () {
       bindRefPanelToggle();
       bindScriptCharCount();
       bindAutoSave();
+      bindGenerateVideo();
     },
   };
 })(jQuery);

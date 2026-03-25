@@ -144,19 +144,81 @@
                 </div>
 
                 {# ── Right Panel: Video ── #}
-                <div class="clip-card__right">
-                    <div class="clip-card__video-placeholder">
-                        <i class="ph-duotone ph-magic-wand clip-card__wand-icon" aria-hidden="true"></i>
+                <div class="clip-card__right" data-status="{{ clip.generation_status }}">
+
+                    {# Idle state: placeholder + generate button #}
+                    <div class="clip-card__state clip-card__state--idle {% if clip.generation_status != 'idle' %}hidden{% endif %}">
+                        <div class="clip-card__video-placeholder">
+                            <i class="ph-duotone ph-magic-wand clip-card__wand-icon" aria-hidden="true"></i>
+                        </div>
+                        <button
+                            type="button"
+                            class="btn btn--primary btn--md clip-card__generate-btn js-generate-video"
+                            aria-label="Generate video for clip {{ clip.sequence_number }}"
+                        >
+                            <i class="ph ph-sparkle" aria-hidden="true"></i>
+                            Generate Video
+                        </button>
                     </div>
-                    <button
-                        type="button"
-                        class="btn btn--primary btn--md clip-card__generate-btn"
-                        disabled
-                        aria-label="Generate video for clip {{ clip.sequence_number }}"
-                    >
-                        <i class="ph ph-sparkle" aria-hidden="true"></i>
-                        Generate Video
-                    </button>
+
+                    {# Generating state: pulsing glow + timer #}
+                    <div class="clip-card__state clip-card__state--generating {% if clip.generation_status != 'generating' %}hidden{% endif %}" aria-live="polite">
+                        <div class="clip-card__video-placeholder clip-card__video-placeholder--generating">
+                            <div class="clip-card__gen-pulse" aria-hidden="true"></div>
+                            <i class="ph-duotone ph-magic-wand clip-card__wand-icon" aria-hidden="true"></i>
+                        </div>
+                        <p class="body-small clip-card__gen-text">
+                            <i class="ph ph-spinner clip-card__spinner" aria-hidden="true"></i>
+                            Generating video&hellip;
+                        </p>
+                        <p class="body-small clip-card__gen-timer js-gen-timer" aria-live="polite">0:00</p>
+                    </div>
+
+                    {# Completed state: video player + regenerate #}
+                    <div class="clip-card__state clip-card__state--completed {% if clip.generation_status != 'completed' %}hidden{% endif %}">
+                        {% if clip.video_file %}
+                        <video
+                            class="clip-card__video js-clip-video"
+                            src="/{{ MEDIA_URL }}{{ clip.video_file }}"
+                            muted
+                            autoplay
+                            loop
+                            playsinline
+                            aria-label="Generated video for clip {{ clip.sequence_number }}"
+                        ></video>
+                        {% else %}
+                        <div class="clip-card__video-placeholder">
+                             <i class="ph ph-check-circle clip-card__done-icon" aria-hidden="true"></i>
+                        </div>
+                        {% endif %}
+                        <button
+                            type="button"
+                            class="btn btn--secondary btn--sm js-generate-video"
+                            aria-label="Regenerate video for clip {{ clip.sequence_number }}"
+                        >
+                            <i class="ph ph-arrows-clockwise" aria-hidden="true"></i>
+                            Regenerate Video
+                        </button>
+                    </div>
+
+                    {# Failed state: error + retry #}
+                    <div class="clip-card__state clip-card__state--failed {% if clip.generation_status != 'failed' %}hidden{% endif %}" aria-live="assertive">
+                        <div class="clip-card__video-placeholder clip-card__video-placeholder--failed">
+                            <i class="ph ph-warning-circle clip-card__error-icon" aria-hidden="true"></i>
+                        </div>
+                        <p class="body-small clip-card__error-text js-error-text">
+                            We couldn't generate this video. Try adjusting the script and click Retry.
+                        </p>
+                        <button
+                            type="button"
+                            class="btn btn--secondary btn--sm js-generate-video"
+                            aria-label="Retry video generation for clip {{ clip.sequence_number }}"
+                        >
+                            <i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i>
+                            Retry
+                        </button>
+                    </div>
+
                     <div class="form-group">
                         <label class="form-label" for="gen-method-{{ clip.sequence_number }}">Generation Method</label>
                         <select
@@ -179,6 +241,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/task_poller.js' %}"></script>
 <script src="{% static 'js/workspace.js' %}"></script>
 {% endblock %}
 

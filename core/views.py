@@ -11,6 +11,8 @@ from django.views.decorators.http import require_POST
 from core.forms import ProjectForm
 from core.models import Clip, Project, ReferenceImage, Task, UserSettings
 from core.services.script_generator import generate_all_scripts
+from core.services.task_runner import run_in_background
+from core.services.video_generator import generate_text_to_video
 
 logger = logging.getLogger(__name__)
 
@@ -325,3 +327,37 @@ def api_task_status(request, task_id):
             "error_message": task.error_message,
         }
     )
+
+
+@csrf_exempt
+@require_POST
+def api_generate_video(request, clip_id):
+    """Start background video generation for a clip.
+
+    POST /api/clips/<id>/generate-video/
+
+    Returns JSON {"task_id": <int>} with HTTP 202 on success.
+    """
+    clip = get_object_or_404(Clip, pk=clip_id)
+
+    if clip.generation_status == "generating":
+        return JsonResponse(
+            {"error": "Video generation is already in progress."},
+            status=409,
+        )
+
+    if not clip.script_text.strip():
+        return JsonResponse(
+            {"error": "Clip has no script text. Write a script first."},
+            status=400,
+        )
+
+    task_id = run_in_background(
+        "video_generation",
+        generate_text_to_video,
+        clip,
+        related_object_id=clip.pk,
+        related_object_type="clip",
+    )
+
+    return JsonResponse({"task_id": task_id}, status=202)
