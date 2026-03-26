@@ -1565,6 +1565,7 @@ checksprint14:
 	$(ACTIVATE) && python -m pytest --tb=short -q
 	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
+	@$(ACTIVATE) && python -c "import django,os;os.environ.setdefault('DJANGO_SETTINGS_MODULE','peliku.settings');django.setup();from core.models import Clip;Clip.objects.filter(generation_status='generating').update(generation_status='pending')" 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
 		CLIP_ID=$$(DJANGO_SETTINGS_MODULE=peliku.settings python -c "import django; django.setup(); from core.models import Clip; print(Clip.objects.first().pk)") && \
 		curl --fail --silent -X POST http://localhost:8000/api/clips/$${CLIP_ID}/generate-video/ \
