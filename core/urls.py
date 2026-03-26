@@ -35,6 +35,11 @@ urlpatterns = [
         name="api_update_clip_script",
     ),
     path(
+        "api/clips/<int:clip_id>/update-method/",
+        views.api_update_generation_method,
+        name="api_update_generation_method",
+    ),
+    path(
         "api/tasks/<int:task_id>/status/",
         views.api_task_status,
         name="api_task_status",
@@ -63,5 +68,10 @@ urlpatterns = [
         "api/clips/<int:clip_id>/update-references/",
         views.api_update_clip_references,
         name="api_update_clip_references",
+    ),
+    path(
+        "api/clips/<int:clip_id>/set-first-frame/",
+        views.api_set_first_frame,
+        name="api_set_first_frame",
     ),
 ]
