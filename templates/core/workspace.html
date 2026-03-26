@@ -284,8 +284,8 @@
                         </select>
                     </div>
 
-                    {# ── First Frame Sub-Panel (Image-to-Video) ── #}
-                    <div class="first-frame-panel js-first-frame-panel {% if clip.generation_method != 'image_to_video' %}hidden{% endif %}" data-clip-id="{{ clip.pk }}">
+                    {# ── First Frame Sub-Panel (Image-to-Video & Frame Interpolation) ── #}
+                    <div class="first-frame-panel js-first-frame-panel {% if clip.generation_method != 'image_to_video' and clip.generation_method != 'frame_interpolation' %}hidden{% endif %}" data-clip-id="{{ clip.pk }}">
                         <span class="form-label">First Frame</span>
                         <div class="first-frame-panel__preview js-first-frame-preview">
                             {% if clip.first_frame %}
@@ -330,6 +330,53 @@
                                 Use Previous Clip's Last Frame
                             </button>
                             {% endif %}
+                        </div>
+                    </div>
+
+                    {# ── Last Frame Sub-Panel (Frame Interpolation only) ── #}
+                    <div class="last-frame-panel js-last-frame-panel {% if clip.generation_method != 'frame_interpolation' %}hidden{% endif %}" data-clip-id="{{ clip.pk }}">
+                        <span class="form-label">Last Frame</span>
+                        <div class="last-frame-panel__preview js-last-frame-preview">
+                            {% if clip.last_frame %}
+                            <img
+                                src="{{ clip.last_frame.url }}"
+                                alt="Last frame for clip {{ clip.sequence_number }}"
+                                class="last-frame-panel__img"
+                            >
+                            {% else %}
+                            <div class="last-frame-panel__empty">
+                                <i class="ph ph-image" aria-hidden="true"></i>
+                                <span class="body-small">No last frame set</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="last-frame-panel__actions">
+                            <button
+                                type="button"
+                                class="btn btn--secondary btn--sm js-last-frame-generate"
+                                aria-label="Generate last frame for clip {{ clip.sequence_number }}"
+                            >
+                                <i class="ph ph-sparkle" aria-hidden="true"></i>
+                                Generate Image
+                            </button>
+                            <label class="btn btn--secondary btn--sm js-last-frame-upload-label">
+                                <i class="ph ph-upload-simple" aria-hidden="true"></i>
+                                Upload Image
+                                <input
+                                    type="file"
+                                    class="visually-hidden js-last-frame-upload-input"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    aria-label="Upload last frame for clip {{ clip.sequence_number }}"
+                                >
+                            </label>
+                            <button
+                                type="button"
+                                class="btn btn--ghost btn--sm js-last-frame-from-next"
+                                aria-label="Use next clip's first frame as last frame for clip {{ clip.sequence_number }}"
+                            >
+                                <i class="ph ph-arrow-bend-down-right" aria-hidden="true"></i>
+                                Use Next Clip's First Frame
+                            </button>
                         </div>
                     </div>
 

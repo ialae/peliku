@@ -438,3 +438,190 @@ def generate_image_to_video(clip):
             clip.project.title,
         )
         raise RuntimeError(f"Image-to-Video generation failed: {exc}") from exc
+
+
+def generate_last_frame_image(clip):
+    """Generate a last-frame image for a clip using the Gemini image API.
+
+    Creates an image from the clip's script suitable for use as
+    an ending frame in Frame Interpolation generation.
+
+    Args:
+        clip: A Clip model instance with script_text populated.
+
+    Returns:
+        str: Relative file path to the generated frame image.
+
+    Raises:
+        ValueError: If the clip has no script text.
+        RuntimeError: If image generation fails.
+    """
+    if not clip.script_text.strip():
+        raise ValueError("Clip has no script text for frame generation.")
+
+    from core.services.image_generator import (
+        IMAGE_MODEL,
+        _extract_image_part,
+    )
+
+    client = get_ai_client()
+    prompt = (
+        f"Generate a cinematic still frame for the closing moment "
+        f"of this video clip: {clip.script_text}"
+    )
+
+    config = types.GenerateContentConfig(
+        response_modalities=["IMAGE"],
+        image_config=types.ImageConfig(
+            image_size="1K",
+            aspect_ratio=clip.project.aspect_ratio.replace(":", ":"),
+        ),
+    )
+
+    response = client.models.generate_content(
+        model=IMAGE_MODEL,
+        contents=prompt,
+        config=config,
+    )
+
+    image_part = _extract_image_part(response)
+
+    frames_dir = _ensure_frames_dir()
+    filename = f"last_{clip.project.pk}_{clip.sequence_number}.png"
+    filepath = frames_dir / filename
+
+    filepath.write_bytes(image_part.inline_data.data)
+
+    relative_path = f"images/frames/{filename}"
+    clip.last_frame = relative_path
+    clip.save(update_fields=["last_frame"])
+
+    logger.info(
+        "Last frame generated for Clip %s of Project '%s'.",
+        clip.sequence_number,
+        clip.project.title,
+    )
+    return relative_path
+
+
+def generate_frame_interpolation(clip):
+    """Generate a video using Frame Interpolation between first and last frames.
+
+    Calls the Veo API with both the first_frame and last_frame images
+    and the clip's script as the prompt. The generated video starts
+    at the first frame and ends at the last frame.
+
+    Args:
+        clip: A Clip model instance with first_frame, last_frame,
+              and script_text set.
+
+    Returns:
+        dict: Result data with video_url and clip_id.
+
+    Raises:
+        ValueError: If the clip lacks script, first frame, or last frame.
+        RuntimeError: If generation or download fails.
+    """
+    if not clip.script_text.strip():
+        clip.generation_status = "failed"
+        clip.save(update_fields=["generation_status"])
+        raise ValueError("Clip has no script text for video generation.")
+
+    if not clip.first_frame or not clip.first_frame.name:
+        clip.generation_status = "failed"
+        clip.save(update_fields=["generation_status"])
+        raise ValueError("Clip has no first frame set for Frame Interpolation.")
+
+    if not clip.last_frame or not clip.last_frame.name:
+        clip.generation_status = "failed"
+        clip.save(update_fields=["generation_status"])
+        raise ValueError("Clip has no last frame set for Frame Interpolation.")
+
+    first_frame_path = Path(settings.MEDIA_ROOT) / clip.first_frame.name
+    if not first_frame_path.exists():
+        clip.generation_status = "failed"
+        clip.save(update_fields=["generation_status"])
+        raise ValueError(f"First frame file not found: {clip.first_frame.name}")
+
+    last_frame_path = Path(settings.MEDIA_ROOT) / clip.last_frame.name
+    if not last_frame_path.exists():
+        clip.generation_status = "failed"
+        clip.save(update_fields=["generation_status"])
+        raise ValueError(f"Last frame file not found: {clip.last_frame.name}")
+
+    clip.generation_status = "generating"
+    clip.save(update_fields=["generation_status"])
+
+    try:
+        client = get_ai_client()
+        user_settings = _get_user_settings()
+        config = _build_video_config(clip, user_settings)
+        model_name = _get_veo_model(user_settings["generation_speed"])
+
+        ref_images = _build_reference_images(clip)
+        if ref_images:
+            config.reference_images = ref_images
+
+        first_bytes = first_frame_path.read_bytes()
+        first_image = types.Part.from_bytes(
+            data=first_bytes,
+            mime_type="image/png",
+        )
+
+        last_bytes = last_frame_path.read_bytes()
+        last_image = types.Part.from_bytes(
+            data=last_bytes,
+            mime_type="image/png",
+        )
+
+        operation = client.models.generate_videos(
+            model=model_name,
+            prompt=clip.script_text,
+            image=first_image,
+            config=config,
+            end_image=last_image,
+        )
+
+        operation = _poll_operation(client, operation)
+
+        generated_video = operation.response.generated_videos[0]
+
+        videos_dir = _ensure_videos_dir()
+        filename = f"clip_{clip.project.pk}_{clip.sequence_number}.mp4"
+        filepath = videos_dir / filename
+
+        client.files.download(file=generated_video.video)
+        generated_video.video.save(str(filepath))
+
+        relative_path = f"videos/{filename}"
+        clip.video_file = relative_path
+        clip.generation_status = "completed"
+        clip.generation_reference_id = getattr(operation, "name", "")
+        clip.save(
+            update_fields=[
+                "video_file",
+                "generation_status",
+                "generation_reference_id",
+            ]
+        )
+
+        logger.info(
+            "Frame Interpolation generated for Clip %s of Project '%s'.",
+            clip.sequence_number,
+            clip.project.title,
+        )
+
+        return {
+            "clip_id": clip.pk,
+            "video_url": f"/{settings.MEDIA_URL}{relative_path}",
+        }
+
+    except Exception as exc:
+        clip.generation_status = "failed"
+        clip.save(update_fields=["generation_status"])
+        logger.exception(
+            "Frame Interpolation failed for Clip %s of Project '%s'.",
+            clip.sequence_number,
+            clip.project.title,
+        )
+        raise RuntimeError(f"Frame Interpolation generation failed: {exc}") from exc

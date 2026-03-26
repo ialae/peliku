@@ -637,11 +637,17 @@ const Workspace = (function ($) {
       var method = $select.val();
 
       var $firstFramePanel = $card.find(".js-first-frame-panel");
+      var $lastFramePanel = $card.find(".js-last-frame-panel");
 
       if (method === "image_to_video") {
         $firstFramePanel.removeClass("hidden");
+        $lastFramePanel.addClass("hidden");
+      } else if (method === "frame_interpolation") {
+        $firstFramePanel.removeClass("hidden");
+        $lastFramePanel.removeClass("hidden");
       } else {
         $firstFramePanel.addClass("hidden");
+        $lastFramePanel.addClass("hidden");
       }
 
       $.ajax({
@@ -835,6 +841,187 @@ const Workspace = (function ($) {
     });
   }
 
+  /* ── Last Frame Management ── */
+
+  /**
+   * Render a last-frame image into the preview area.
+   * @param {jQuery} $panel - The .js-last-frame-panel element.
+   * @param {string} imageUrl - The URL of the last-frame image.
+   */
+  function renderLastFrame($panel, imageUrl) {
+    var $preview = $panel.find(".js-last-frame-preview");
+    $preview.html(
+      '<img src="' +
+        imageUrl +
+        '" alt="Last frame" class="last-frame-panel__img">'
+    );
+  }
+
+  /**
+   * Bind the "Generate Image" button in the last-frame panel.
+   */
+  function bindLastFrameGenerate() {
+    $(document).on("click", ".js-last-frame-generate", function () {
+      var $btn = $(this);
+      var $panel = $btn.closest(".js-last-frame-panel");
+      var clipId = $panel.data("clip-id");
+
+      $btn.prop("disabled", true).text("Generating\u2026");
+
+      $.ajax({
+        url: "/api/clips/" + clipId + "/set-last-frame/",
+        method: "POST",
+        contentType: "application/json",
+        headers: { "X-CSRFToken": getCsrfToken() },
+        data: JSON.stringify({ source: "generate" }),
+        success: function (data) {
+          if (data.task_id) {
+            TaskPoller.pollTask(data.task_id, {
+              onComplete: function (taskData) {
+                var imageUrl =
+                  taskData.result_data && taskData.result_data.image_url
+                    ? taskData.result_data.image_url
+                    : "";
+                if (imageUrl) {
+                  renderLastFrame($panel, imageUrl);
+                }
+                $btn.prop("disabled", false).html(
+                  '<i class="ph ph-sparkle" aria-hidden="true"></i> Generate Image'
+                );
+                if (typeof Peliku !== "undefined" && Peliku.Toast) {
+                  Peliku.Toast.show("Last frame generated", "success");
+                }
+              },
+              onError: function () {
+                $btn.prop("disabled", false).html(
+                  '<i class="ph ph-sparkle" aria-hidden="true"></i> Generate Image'
+                );
+                if (typeof Peliku !== "undefined" && Peliku.Toast) {
+                  Peliku.Toast.show("Last frame generation failed", "error");
+                }
+              },
+            });
+          }
+        },
+        error: function (xhr) {
+          $btn.prop("disabled", false).html(
+            '<i class="ph ph-sparkle" aria-hidden="true"></i> Generate Image'
+          );
+          var msg = "Could not generate last frame.";
+          try {
+            var body = JSON.parse(xhr.responseText);
+            if (body.error) {
+              msg = body.error;
+            }
+          } catch (e) {
+            /* use default */
+          }
+          if (typeof Peliku !== "undefined" && Peliku.Toast) {
+            Peliku.Toast.show(msg, "error");
+          }
+        },
+      });
+    });
+  }
+
+  /**
+   * Bind the file upload input in the last-frame panel.
+   */
+  function bindLastFrameUpload() {
+    $(document).on("change", ".js-last-frame-upload-input", function () {
+      var $input = $(this);
+      var file = $input[0].files[0];
+      if (!file) {
+        return;
+      }
+
+      var $panel = $input.closest(".js-last-frame-panel");
+      var clipId = $panel.data("clip-id");
+
+      var formData = new FormData();
+      formData.append("source", "upload");
+      formData.append("image", file);
+
+      $.ajax({
+        url: "/api/clips/" + clipId + "/set-last-frame/",
+        method: "POST",
+        headers: { "X-CSRFToken": getCsrfToken() },
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function (data) {
+          if (data.image_url) {
+            renderLastFrame($panel, data.image_url);
+          }
+          if (typeof Peliku !== "undefined" && Peliku.Toast) {
+            Peliku.Toast.show("Last frame uploaded", "success");
+          }
+        },
+        error: function (xhr) {
+          var msg = "Upload failed.";
+          try {
+            var body = JSON.parse(xhr.responseText);
+            if (body.error) {
+              msg = body.error;
+            }
+          } catch (e) {
+            /* use default */
+          }
+          if (typeof Peliku !== "undefined" && Peliku.Toast) {
+            Peliku.Toast.show(msg, "error");
+          }
+        },
+      });
+
+      $input.val("");
+    });
+  }
+
+  /**
+   * Bind the "Use Next Clip's First Frame" button.
+   */
+  function bindLastFrameFromNext() {
+    $(document).on("click", ".js-last-frame-from-next", function () {
+      var $btn = $(this);
+      var $panel = $btn.closest(".js-last-frame-panel");
+      var clipId = $panel.data("clip-id");
+
+      $btn.prop("disabled", true);
+
+      $.ajax({
+        url: "/api/clips/" + clipId + "/set-last-frame/",
+        method: "POST",
+        contentType: "application/json",
+        headers: { "X-CSRFToken": getCsrfToken() },
+        data: JSON.stringify({ source: "next_clip" }),
+        success: function (data) {
+          if (data.image_url) {
+            renderLastFrame($panel, data.image_url);
+          }
+          $btn.prop("disabled", false);
+          if (typeof Peliku !== "undefined" && Peliku.Toast) {
+            Peliku.Toast.show("Last frame set from next clip", "success");
+          }
+        },
+        error: function (xhr) {
+          $btn.prop("disabled", false);
+          var msg = "Could not set last frame from next clip.";
+          try {
+            var body = JSON.parse(xhr.responseText);
+            if (body.error) {
+              msg = body.error;
+            }
+          } catch (e) {
+            /* use default */
+          }
+          if (typeof Peliku !== "undefined" && Peliku.Toast) {
+            Peliku.Toast.show(msg, "error");
+          }
+        },
+      });
+    });
+  }
+
   return {
     init: function () {
       bindRefPanelToggle();
@@ -845,6 +1032,9 @@ const Workspace = (function ($) {
       bindFirstFrameGenerate();
       bindFirstFrameUpload();
       bindFirstFrameFromPrev();
+      bindLastFrameGenerate();
+      bindLastFrameUpload();
+      bindLastFrameFromNext();
       bindRefGenerate();
       bindRefUpload();
       bindRefRemove();

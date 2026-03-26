@@ -74,4 +74,9 @@ urlpatterns = [
         views.api_set_first_frame,
         name="api_set_first_frame",
     ),
+    path(
+        "api/clips/<int:clip_id>/set-last-frame/",
+        views.api_set_last_frame,
+        name="api_set_last_frame",
+    ),
 ]
