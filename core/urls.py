@@ -104,4 +104,9 @@ urlpatterns = [
         views.api_regenerate_all_scripts,
         name="api_regenerate_all_scripts",
     ),
+    path(
+        "api/clips/<int:clip_id>/generate-transition/",
+        views.api_generate_transition,
+        name="api_generate_transition",
+    ),
 ]
