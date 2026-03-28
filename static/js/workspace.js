@@ -1166,7 +1166,7 @@ const Workspace = (function ($) {
       '<span class="char-count" aria-live="polite">' +
       '<span class="js-char-current">0</span>/2000</span></div></div>' +
       '<div class="clip-card__left-actions">' +
-      '<button type="button" class="btn btn--secondary btn--sm" disabled ' +
+      '<button type="button" class="btn btn--secondary btn--sm js-regenerate-script" ' +
       'aria-label="Regenerate script for clip ' +
       seq +
       '">' +
@@ -1337,15 +1337,22 @@ const Workspace = (function ($) {
   }
 
   /**
-   * Bind confirm modal buttons for clip delete flow.
+   * Bind confirm modal buttons for clip delete and regenerate-all flows.
    */
   function bindDeleteConfirmModal() {
     $(document).on("click", ".js-confirm-ok", function () {
+      if (pendingRegenerateAll) {
+        pendingRegenerateAll = false;
+        closeConfirmModal();
+        regenerateAllScripts();
+        return;
+      }
+
       if (!pendingDeleteClipId) {
         return;
       }
       var clipId = pendingDeleteClipId;
-      closeDeleteModal();
+      closeConfirmModal();
 
       $.ajax({
         url: "/api/clips/" + clipId + "/delete/",
@@ -1391,23 +1398,172 @@ const Workspace = (function ($) {
       "click",
       ".js-confirm-cancel, .js-confirm-close",
       function () {
-        if (pendingDeleteClipId) {
-          closeDeleteModal();
-        }
+        closeConfirmModal();
       }
     );
   }
 
   /**
-   * Close the delete confirmation modal and reset pending state.
+   * Close the confirmation modal and reset all pending states.
    */
-  function closeDeleteModal() {
+  function closeConfirmModal() {
     $(".js-confirm-overlay").removeClass("is-active");
     pendingDeleteClipId = null;
+    pendingRegenerateAll = false;
+    $(".js-confirm-ok")
+      .text("Delete")
+      .removeClass("btn--primary")
+      .addClass("btn--danger");
   }
 
   /* ── State for delete confirmation ── */
   var pendingDeleteClipId = null;
+
+  /* ── Script Regeneration ── */
+
+  /**
+   * Regenerate the script for a single clip via AI.
+   * POSTs to /api/clips/<id>/regenerate-script/ and updates the textarea.
+   * @param {jQuery} $card - The .clip-card article element.
+   */
+  function regenerateSingleScript($card) {
+    var clipId = $card.data("clip-id");
+    var clipNum = $card.data("clip");
+    var $btn = $card.find(".js-regenerate-script");
+    var $textarea = $card.find(".clip-card__script");
+
+    $btn.prop("disabled", true).html(
+      '<i class="ph ph-spinner clip-card__spinner" aria-hidden="true"></i> Regenerating\u2026'
+    );
+
+    $.ajax({
+      url: "/api/clips/" + clipId + "/regenerate-script/",
+      method: "POST",
+      contentType: "application/json",
+      headers: { "X-CSRFToken": getCsrfToken() },
+      success: function (data) {
+        if (data.script_text !== undefined) {
+          $textarea.val(data.script_text);
+          $card.find(".js-char-current").text(data.script_text.length);
+        }
+        $btn.prop("disabled", false).html(
+          '<i class="ph ph-arrows-clockwise" aria-hidden="true"></i> Regenerate Script'
+        );
+        if (typeof Peliku !== "undefined" && Peliku.Toast) {
+          Peliku.Toast.show(
+            "Clip " + clipNum + " script regenerated",
+            "success"
+          );
+        }
+      },
+      error: function (xhr) {
+        $btn.prop("disabled", false).html(
+          '<i class="ph ph-arrows-clockwise" aria-hidden="true"></i> Regenerate Script'
+        );
+        var msg = "Script regeneration failed.";
+        try {
+          var body = JSON.parse(xhr.responseText);
+          if (body.error) {
+            msg = body.error;
+          }
+        } catch (e) {
+          /* use default */
+        }
+        if (typeof Peliku !== "undefined" && Peliku.Toast) {
+          Peliku.Toast.show(msg, "error");
+        }
+      },
+    });
+  }
+
+  /**
+   * Bind per-clip "Regenerate Script" button clicks.
+   */
+  function bindRegenerateScript() {
+    $(document).on("click", ".js-regenerate-script", function () {
+      var $card = $(this).closest(".clip-card");
+      regenerateSingleScript($card);
+    });
+  }
+
+  /* ── State for regenerate-all confirmation ── */
+  var pendingRegenerateAll = false;
+
+  /**
+   * Regenerate all scripts for the project via AI.
+   * POSTs to /api/projects/<id>/regenerate-all-scripts/ and updates textareas.
+   */
+  function regenerateAllScripts() {
+    var projectId = getClipProjectId();
+    var $btn = $(".js-regenerate-all-scripts");
+
+    $btn.prop("disabled", true).html(
+      '<i class="ph ph-spinner clip-card__spinner" aria-hidden="true"></i> Regenerating\u2026'
+    );
+
+    $.ajax({
+      url: "/api/projects/" + projectId + "/regenerate-all-scripts/",
+      method: "POST",
+      contentType: "application/json",
+      headers: { "X-CSRFToken": getCsrfToken() },
+      success: function (data) {
+        if (data.scripts) {
+          $.each(data.scripts, function (_, item) {
+            var $card = $('[data-clip-id="' + item.clip_id + '"]');
+            if ($card.length) {
+              $card.find(".clip-card__script").val(item.script_text);
+              $card.find(".js-char-current").text(item.script_text.length);
+            }
+          });
+        }
+        $btn.prop("disabled", false).html(
+          '<i class="ph ph-arrows-clockwise" aria-hidden="true"></i> Regenerate All Scripts'
+        );
+        if (typeof Peliku !== "undefined" && Peliku.Toast) {
+          Peliku.Toast.show("All scripts regenerated", "success");
+        }
+      },
+      error: function (xhr) {
+        $btn.prop("disabled", false).html(
+          '<i class="ph ph-arrows-clockwise" aria-hidden="true"></i> Regenerate All Scripts'
+        );
+        var msg = "Script regeneration failed.";
+        try {
+          var body = JSON.parse(xhr.responseText);
+          if (body.error) {
+            msg = body.error;
+          }
+        } catch (e) {
+          /* use default */
+        }
+        if (typeof Peliku !== "undefined" && Peliku.Toast) {
+          Peliku.Toast.show(msg, "error");
+        }
+      },
+    });
+  }
+
+  /**
+   * Bind the "Regenerate All Scripts" header button.
+   * Shows a confirmation modal before proceeding.
+   */
+  function bindRegenerateAllScripts() {
+    $(document).on("click", ".js-regenerate-all-scripts", function () {
+      pendingRegenerateAll = true;
+      $(".js-confirm-title").text("Regenerate All Scripts");
+      $(".js-confirm-message").text(
+        "Regenerate all scripts? This will replace all current clip " +
+          "scripts with new AI-generated ones. Existing videos will " +
+          "not be affected."
+      );
+      $(".js-confirm-ok")
+        .text("Regenerate")
+        .removeClass("btn--danger")
+        .addClass("btn--primary");
+      $(".js-confirm-overlay").addClass("is-active");
+      $(".js-confirm-ok").trigger("focus");
+    });
+  }
 
   return {
     init: function () {
@@ -1431,6 +1587,8 @@ const Workspace = (function ($) {
       bindAddClip();
       bindDeleteClip();
       bindDeleteConfirmModal();
+      bindRegenerateScript();
+      bindRegenerateAllScripts();
     },
   };
 })(jQuery);

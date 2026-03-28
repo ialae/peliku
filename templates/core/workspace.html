@@ -4,7 +4,7 @@
 {% block title %}Peliku — {{ project.title }}{% endblock %}
 
 {% block header_actions %}
-<button type="button" class="btn btn--ghost btn--md" disabled aria-label="Regenerate all scripts">
+<button type="button" class="btn btn--ghost btn--md js-regenerate-all-scripts" aria-label="Regenerate all scripts">
     <i class="ph ph-arrows-clockwise" aria-hidden="true"></i>
     Regenerate All Scripts
 </button>
@@ -187,8 +187,7 @@
                     <div class="clip-card__left-actions">
                         <button
                             type="button"
-                            class="btn btn--secondary btn--sm"
-                            disabled
+                            class="btn btn--secondary btn--sm js-regenerate-script"
                             aria-label="Regenerate script for clip {{ clip.sequence_number }}"
                         >
                             <i class="ph ph-arrows-clockwise" aria-hidden="true"></i>

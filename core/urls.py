@@ -94,4 +94,14 @@ urlpatterns = [
         views.api_delete_clip,
         name="api_delete_clip",
     ),
+    path(
+        "api/clips/<int:clip_id>/regenerate-script/",
+        views.api_regenerate_clip_script,
+        name="api_regenerate_clip_script",
+    ),
+    path(
+        "api/projects/<int:project_id>/regenerate-all-scripts/",
+        views.api_regenerate_all_scripts,
+        name="api_regenerate_all_scripts",
+    ),
 ]
