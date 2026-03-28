@@ -349,6 +349,61 @@
     gap: var(--space-2);
 }
 
+/* ─── Last Frame Panel ────────────────────────────────────── */
+
+.last-frame-panel {
+    margin-top: var(--space-2);
+    padding: var(--space-4);
+    background-color: var(--color-surface-hover);
+    border-radius: var(--radius-lg);
+    border: var(--border-width) solid var(--color-neutral-700);
+}
+
+.last-frame-panel.hidden {
+    display: none;
+}
+
+.last-frame-panel__preview {
+    margin-top: var(--space-2);
+    margin-bottom: var(--space-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 200px;
+    aspect-ratio: 9 / 16;
+    border: var(--border-width) dashed var(--color-neutral-600);
+    border-radius: var(--radius-md);
+    background-color: var(--color-neutral-800);
+    overflow: hidden;
+}
+
+.last-frame-panel__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+}
+
+.last-frame-panel__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    color: var(--color-neutral-500);
+    font-size: 32px;
+}
+
+.last-frame-panel__empty .body-small {
+    font-size: var(--text-xs);
+}
+
+.last-frame-panel__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
 /* ─── Clip List ───────────────────────────────────────────── */
 
 .clip-list {

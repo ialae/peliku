@@ -16,7 +16,9 @@ from core.services.script_generator import generate_all_scripts
 from core.services.task_runner import run_in_background
 from core.services.video_generator import (
     generate_first_frame_image,
+    generate_frame_interpolation,
     generate_image_to_video,
+    generate_last_frame_image,
     generate_text_to_video,
 )
 
@@ -421,6 +423,18 @@ def api_generate_video(request, clip_id):
                 status=400,
             )
 
+    if method == "frame_interpolation":
+        if not clip.first_frame or not clip.first_frame.name:
+            return JsonResponse(
+                {"error": "Set a first frame before using Frame Interpolation."},
+                status=400,
+            )
+        if not clip.last_frame or not clip.last_frame.name:
+            return JsonResponse(
+                {"error": "Set a last frame before using Frame Interpolation."},
+                status=400,
+            )
+
     task_id = run_in_background(
         "video_generation",
         generator_func,
@@ -435,6 +449,7 @@ def api_generate_video(request, clip_id):
 VALID_GENERATION_METHODS = {
     "text_to_video": generate_text_to_video,
     "image_to_video": generate_image_to_video,
+    "frame_interpolation": generate_frame_interpolation,
 }
 
 
@@ -841,5 +856,161 @@ def _handle_first_frame_upload(request, clip):
             "status": "set",
             "clip_id": clip.pk,
             "image_url": clip.first_frame.url,
+        }
+    )
+
+
+# ── Last Frame Management ────────────────────────────────────────────────────
+
+LAST_FRAME_SOURCES = {"generate", "upload", "next_clip"}
+
+
+@csrf_exempt
+@require_POST
+def api_set_last_frame(request, clip_id):
+    """Set the last frame for a clip.
+
+    POST /api/clips/<id>/set-last-frame/
+
+    Accepts either:
+    - JSON {"source": "generate"} — generates a frame from the script
+    - JSON {"source": "next_clip"} — copies next clip's first frame
+    - Multipart form with "source": "upload" and "image" file
+    """
+    clip = get_object_or_404(Clip, pk=clip_id)
+
+    content_type = request.content_type or ""
+
+    if "multipart" in content_type:
+        return _handle_last_frame_upload(request, clip)
+
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid JSON."}, status=400)
+
+    source = body.get("source", "").strip()
+    if source not in LAST_FRAME_SOURCES:
+        valid_sources = ", ".join(sorted(LAST_FRAME_SOURCES))
+        return JsonResponse(
+            {"error": f"source must be one of: {valid_sources}."},
+            status=400,
+        )
+
+    if source == "generate":
+        return _handle_last_frame_generate(clip)
+
+    if source == "next_clip":
+        return _handle_last_frame_from_next(clip)
+
+    return JsonResponse({"error": "Invalid source."}, status=400)
+
+
+def _handle_last_frame_generate(clip):
+    """Generate a last-frame image via AI in the background."""
+    if not clip.script_text.strip():
+        return JsonResponse(
+            {"error": "Clip has no script text for frame generation."},
+            status=400,
+        )
+
+    task_id = run_in_background(
+        "last_frame_generation",
+        _generate_and_save_last_frame,
+        clip,
+        related_object_id=clip.pk,
+        related_object_type="clip",
+    )
+
+    return JsonResponse({"task_id": task_id}, status=202)
+
+
+def _generate_and_save_last_frame(clip):
+    """Background task: generate last frame image and save to clip.
+
+    Args:
+        clip: A Clip model instance.
+
+    Returns:
+        dict: Result with image_url and clip_id.
+    """
+    relative_path = generate_last_frame_image(clip)
+    return {
+        "clip_id": clip.pk,
+        "image_url": f"/{settings.MEDIA_URL}{relative_path}",
+    }
+
+
+def _handle_last_frame_from_next(clip):
+    """Copy the next clip's first frame as this clip's last frame."""
+    from pathlib import Path
+
+    from django.core.files.base import ContentFile
+
+    next_clip = Clip.objects.filter(
+        project=clip.project,
+        sequence_number=clip.sequence_number + 1,
+    ).first()
+
+    if not next_clip:
+        return JsonResponse(
+            {"error": "No next clip exists."},
+            status=400,
+        )
+
+    if not next_clip.first_frame or not next_clip.first_frame.name:
+        return JsonResponse(
+            {"error": "Next clip has no first frame set."},
+            status=400,
+        )
+
+    source_path = Path(settings.MEDIA_ROOT) / next_clip.first_frame.name
+    if not source_path.exists():
+        return JsonResponse(
+            {"error": "Next clip's first frame file not found."},
+            status=404,
+        )
+
+    content = source_path.read_bytes()
+    filename = f"last_{clip.project.pk}_{clip.sequence_number}_from_next.png"
+    clip.last_frame.save(filename, ContentFile(content), save=True)
+
+    return JsonResponse(
+        {
+            "status": "set",
+            "clip_id": clip.pk,
+            "image_url": clip.last_frame.url,
+        }
+    )
+
+
+def _handle_last_frame_upload(request, clip):
+    """Handle multipart upload of a last-frame image."""
+    image = request.FILES.get("image")
+    if not image:
+        return JsonResponse(
+            {"error": "image file is required."},
+            status=400,
+        )
+
+    if image.content_type not in ALLOWED_IMAGE_TYPES:
+        return JsonResponse(
+            {"error": "Image must be JPEG, PNG, or WebP."},
+            status=400,
+        )
+
+    if image.size > MAX_IMAGE_SIZE_BYTES:
+        return JsonResponse(
+            {"error": "Image must be 10 MB or smaller."},
+            status=400,
+        )
+
+    clip.last_frame.save(image.name, image, save=True)
+
+    return JsonResponse(
+        {
+            "status": "set",
+            "clip_id": clip.pk,
+            "image_url": clip.last_frame.url,
         }
     )
