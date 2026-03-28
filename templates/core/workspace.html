@@ -133,7 +133,7 @@
     </div>
 
     {# ── Clip Sections ── #}
-    <div class="clip-list" aria-label="Clip sequence">
+    <div class="clip-list js-clip-list" data-project-id="{{ project.pk }}" aria-label="Clip sequence">
         {% for clip in clips %}
         {# Connector line above clip (except the first one) #}
         {% if not forloop.first %}
@@ -160,7 +160,7 @@
             aria-label="Clip {{ clip.sequence_number }}"
         >
             {# Drag handle #}
-            <div class="clip-card__drag" aria-label="Drag to reorder clip {{ clip.sequence_number }}" role="img">
+            <div class="clip-card__drag js-drag-handle" aria-label="Drag to reorder clip {{ clip.sequence_number }}" role="img">
                 <i class="ph ph-dots-six-vertical" aria-hidden="true"></i>
             </div>
 
@@ -184,15 +184,25 @@
                             </span>
                         </div>
                     </div>
-                    <button
-                        type="button"
-                        class="btn btn--secondary btn--sm"
-                        disabled
-                        aria-label="Regenerate script for clip {{ clip.sequence_number }}"
-                    >
-                        <i class="ph ph-arrows-clockwise" aria-hidden="true"></i>
-                        Regenerate Script
-                    </button>
+                    <div class="clip-card__left-actions">
+                        <button
+                            type="button"
+                            class="btn btn--secondary btn--sm"
+                            disabled
+                            aria-label="Regenerate script for clip {{ clip.sequence_number }}"
+                        >
+                            <i class="ph ph-arrows-clockwise" aria-hidden="true"></i>
+                            Regenerate Script
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn--ghost btn--sm btn--danger-text js-delete-clip"
+                            aria-label="Delete clip {{ clip.sequence_number }}"
+                        >
+                            <i class="ph ph-trash" aria-hidden="true"></i>
+                            Delete Clip
+                        </button>
+                    </div>
                 </div>
 
                 {# ── Right Panel: Video ── #}
@@ -416,8 +426,23 @@
             </div>
         </article>
         {% endfor %}
+
+        {# ── Add Clip Button ── #}
+        <div class="clip-add-container">
+            <button
+                type="button"
+                class="btn btn--secondary btn--md js-add-clip"
+                {% if clips|length >= 10 %}disabled title="Maximum of 10 clips per project"{% endif %}
+                aria-label="Add a new clip"
+            >
+                <i class="ph ph-plus" aria-hidden="true"></i>
+                Add Clip
+            </button>
+        </div>
     </div>
 </section>
+
+{% include "core/partials/confirm_modal.html" %}
 {% endblock %}
 
 {% block extra_js %}
