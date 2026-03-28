@@ -13,7 +13,11 @@ from django.views.decorators.http import require_POST
 from core.forms import ProjectForm
 from core.models import Clip, Project, ReferenceImage, Task, UserSettings
 from core.services.image_generator import generate_reference_image
-from core.services.script_generator import generate_all_scripts
+from core.services.script_generator import (
+    generate_all_scripts,
+    regenerate_all_scripts,
+    regenerate_single_script,
+)
 from core.services.task_runner import run_in_background
 from core.services.video_generator import (
     generate_first_frame_image,
@@ -1161,3 +1165,104 @@ def _delete_clip_media(clip):
             clip.last_frame.delete(save=False)
         except Exception:
             logger.warning("Failed to delete frame: %s", clip.last_frame.name)
+
+
+# ── Script Regeneration ──────────────────────────────────────────────────────
+
+
+@csrf_exempt
+@require_POST
+def api_regenerate_clip_script(request, clip_id):
+    """Regenerate a single clip's script using AI with neighbor context.
+
+    POST /api/clips/<id>/regenerate-script/
+
+    Calls the Gemini API to rewrite this clip's script while
+    maintaining coherence with neighboring clips. Returns the new
+    script text as JSON.
+
+    Returns JSON {"status": "regenerated", "clip_id": <int>,
+    "script_text": <str>} with HTTP 200 on success.
+    """
+    clip = get_object_or_404(Clip, pk=clip_id)
+
+    try:
+        new_script = regenerate_single_script(clip)
+    except Exception:
+        logger.warning(
+            "Script regeneration failed for clip %d",
+            clip.pk,
+            exc_info=True,
+        )
+        return JsonResponse(
+            {"error": "Script regeneration failed. Please try again."},
+            status=500,
+        )
+
+    clip.script_text = new_script
+    clip.save(update_fields=["script_text"])
+
+    return JsonResponse(
+        {
+            "status": "regenerated",
+            "clip_id": clip.pk,
+            "script_text": new_script,
+        }
+    )
+
+
+@csrf_exempt
+@require_POST
+def api_regenerate_all_scripts(request, project_id):
+    """Regenerate all clip scripts for a project from scratch.
+
+    POST /api/projects/<id>/regenerate-all-scripts/
+
+    Calls the Gemini API to rewrite every clip's script based on
+    the current project metadata. Returns the new scripts as JSON.
+
+    Returns JSON {"status": "regenerated", "scripts": [
+        {"clip_id": <int>, "sequence_number": <int>,
+         "script_text": <str>}, ...
+    ]} with HTTP 200 on success.
+    """
+    project = get_object_or_404(Project, pk=project_id)
+    clips = list(project.clips.order_by("sequence_number"))
+
+    if not clips:
+        return JsonResponse(
+            {"error": "Project has no clips to regenerate."},
+            status=400,
+        )
+
+    try:
+        new_scripts = regenerate_all_scripts(project)
+    except Exception:
+        logger.warning(
+            "Full script regeneration failed for project '%s'",
+            project.title,
+            exc_info=True,
+        )
+        return JsonResponse(
+            {"error": "Script regeneration failed. Please try again."},
+            status=500,
+        )
+
+    scripts_response = []
+    for clip, script in zip(clips, new_scripts):
+        clip.script_text = script
+        clip.save(update_fields=["script_text"])
+        scripts_response.append(
+            {
+                "clip_id": clip.pk,
+                "sequence_number": clip.sequence_number,
+                "script_text": script,
+            }
+        )
+
+    return JsonResponse(
+        {
+            "status": "regenerated",
+            "scripts": scripts_response,
+        }
+    )
