@@ -13,6 +13,7 @@ __pycache__/
 
 # Database
 db.sqlite3
+test_db.sqlite3
 
 # Media files
 media/
