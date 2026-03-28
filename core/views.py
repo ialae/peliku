@@ -4,6 +4,7 @@ import json
 import logging
 
 from django.conf import settings
+from django.db.models import F
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
@@ -1014,3 +1015,149 @@ def _handle_last_frame_upload(request, clip):
             "image_url": clip.last_frame.url,
         }
     )
+
+
+# ── Clip Management ──────────────────────────────────────────────────────────
+
+MAX_CLIPS_PER_PROJECT = 10
+
+
+@csrf_exempt
+@require_POST
+def api_reorder_clips(request, project_id):
+    """Reorder clips within a project.
+
+    POST /api/projects/<id>/clips/reorder/
+    Body JSON: {"clip_ids": [3, 1, 5, 2, 4]}
+    """
+    project = get_object_or_404(Project, pk=project_id)
+
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid JSON."}, status=400)
+
+    clip_ids = body.get("clip_ids")
+    if not isinstance(clip_ids, list):
+        return JsonResponse(
+            {"error": "clip_ids must be a list."},
+            status=400,
+        )
+
+    project_clip_ids = set(project.clips.values_list("pk", flat=True))
+
+    if set(clip_ids) != project_clip_ids:
+        return JsonResponse(
+            {"error": "clip_ids must contain exactly all clip IDs for the project."},
+            status=400,
+        )
+
+    if len(clip_ids) != len(set(clip_ids)):
+        return JsonResponse(
+            {"error": "clip_ids must not contain duplicates."},
+            status=400,
+        )
+
+    for new_seq, clip_id in enumerate(clip_ids, start=1):
+        Clip.objects.filter(pk=clip_id).update(sequence_number=-new_seq)
+
+    Clip.objects.filter(project=project, sequence_number__lt=0).update(
+        sequence_number=-F("sequence_number")
+    )
+
+    return JsonResponse({"status": "reordered"})
+
+
+@csrf_exempt
+@require_POST
+def api_add_clip(request, project_id):
+    """Add a new empty clip at the end of the project's sequence.
+
+    POST /api/projects/<id>/clips/add/
+    Returns JSON with the new clip data.
+    """
+    project = get_object_or_404(Project, pk=project_id)
+
+    current_count = project.clips.count()
+    if current_count >= MAX_CLIPS_PER_PROJECT:
+        return JsonResponse(
+            {"error": "Maximum of 10 clips per project."},
+            status=400,
+        )
+
+    last_clip = project.clips.order_by("-sequence_number").first()
+    next_seq = (last_clip.sequence_number + 1) if last_clip else 1
+
+    clip = Clip.objects.create(
+        project=project,
+        sequence_number=next_seq,
+        script_text="",
+    )
+
+    return JsonResponse(
+        {
+            "status": "added",
+            "clip": {
+                "id": clip.pk,
+                "sequence_number": clip.sequence_number,
+                "script_text": clip.script_text,
+                "generation_status": clip.generation_status,
+                "generation_method": clip.generation_method,
+            },
+        },
+        status=201,
+    )
+
+
+@csrf_exempt
+@require_POST
+def api_delete_clip(request, clip_id):
+    """Delete a clip and resequence remaining clips.
+
+    POST /api/clips/<id>/delete/
+    Deletes associated video/image files from disk.
+    """
+    clip = get_object_or_404(Clip, pk=clip_id)
+    project = clip.project
+
+    if project.clips.count() <= 1:
+        return JsonResponse(
+            {"error": "Cannot delete the last clip. Minimum is 1 clip."},
+            status=400,
+        )
+
+    _delete_clip_media(clip)
+    deleted_seq = clip.sequence_number
+    clip.delete()
+
+    remaining = project.clips.order_by("sequence_number")
+    for new_seq, remaining_clip in enumerate(remaining, start=1):
+        if remaining_clip.sequence_number != new_seq:
+            remaining_clip.sequence_number = new_seq
+            remaining_clip.save(update_fields=["sequence_number"])
+
+    return JsonResponse(
+        {
+            "status": "deleted",
+            "deleted_sequence": deleted_seq,
+        }
+    )
+
+
+def _delete_clip_media(clip):
+    """Remove media files from disk for a single clip."""
+    if clip.video_file and clip.video_file.name:
+        try:
+            clip.video_file.delete(save=False)
+        except Exception:
+            logger.warning("Failed to delete video: %s", clip.video_file.name)
+    if clip.first_frame and clip.first_frame.name:
+        try:
+            clip.first_frame.delete(save=False)
+        except Exception:
+            logger.warning("Failed to delete frame: %s", clip.first_frame.name)
+    if clip.last_frame and clip.last_frame.name:
+        try:
+            clip.last_frame.delete(save=False)
+        except Exception:
+            logger.warning("Failed to delete frame: %s", clip.last_frame.name)

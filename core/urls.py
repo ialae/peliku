@@ -79,4 +79,19 @@ urlpatterns = [
         views.api_set_last_frame,
         name="api_set_last_frame",
     ),
+    path(
+        "api/projects/<int:project_id>/clips/reorder/",
+        views.api_reorder_clips,
+        name="api_reorder_clips",
+    ),
+    path(
+        "api/projects/<int:project_id>/clips/add/",
+        views.api_add_clip,
+        name="api_add_clip",
+    ),
+    path(
+        "api/clips/<int:clip_id>/delete/",
+        views.api_delete_clip,
+        name="api_delete_clip",
+    ),
 ]

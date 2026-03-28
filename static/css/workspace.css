@@ -444,6 +444,21 @@
     display: flex;
     gap: var(--space-4);
     position: relative;
+    transition: border-color var(--duration-fast) var(--ease-default);
+}
+
+.clip-card.ui-sortable-helper {
+    border: 2px solid var(--color-primary-500);
+    box-shadow: var(--shadow-lg);
+    opacity: 0.95;
+}
+
+.clip-card.ui-sortable-placeholder {
+    visibility: visible !important;
+    border: 2px dashed var(--color-primary-400);
+    background-color: rgba(168, 85, 247, 0.05);
+    border-radius: var(--radius-xl);
+    min-height: 120px;
 }
 
 .clip-card__drag {
@@ -635,6 +650,31 @@
 
 .save-status--error {
     color: var(--color-error-500);
+}
+
+/* ─── Left Panel Actions ─────────────────────────────────── */
+
+.clip-card__left-actions {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.btn--danger-text {
+    color: var(--color-error-400);
+}
+
+.btn--danger-text:hover {
+    color: var(--color-error-300);
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* ─── Add Clip ────────────────────────────────────────────── */
+
+.clip-add-container {
+    display: flex;
+    justify-content: center;
+    padding: var(--space-6) 0;
 }
 
 /* ─── Responsive: stack clip panels on mobile ─────────────── */

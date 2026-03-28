@@ -1022,6 +1022,393 @@ const Workspace = (function ($) {
     });
   }
 
+  /* ── Clip Management: Sortable, Add, Delete ── */
+
+  /**
+   * Get the project ID from the clip-list data attribute.
+   * @returns {number} The project primary key.
+   */
+  function getClipProjectId() {
+    return $(".js-clip-list").data("project-id");
+  }
+
+  /**
+   * Update clip heading numbers and labels after reorder / add / delete.
+   */
+  function renumberClips() {
+    $(".js-clip-list .clip-card").each(function (index) {
+      var newNum = index + 1;
+      var $card = $(this);
+      $card.attr("data-clip", newNum);
+      $card.attr("aria-label", "Clip " + newNum);
+      $card.find(".clip-card__heading").text("Clip " + newNum);
+
+      var clipId = $card.data("clip-id");
+      var $script = $card.find(".clip-card__script");
+      $script.attr("id", "script-" + newNum);
+      $script.attr("aria-label", "Script for clip " + newNum);
+      $card.find(".form-label[for^='script-']").attr("for", "script-" + newNum);
+
+      var $method = $card.find(".js-gen-method");
+      $method.attr("id", "gen-method-" + newNum);
+      $card
+        .find(".form-label[for^='gen-method-']")
+        .attr("for", "gen-method-" + newNum);
+    });
+    updateAddClipButton();
+  }
+
+  /**
+   * Enable or disable the Add Clip button based on current count.
+   */
+  function updateAddClipButton() {
+    var count = $(".js-clip-list .clip-card").length;
+    var $btn = $(".js-add-clip");
+    if (count >= MAX_CLIPS) {
+      $btn.prop("disabled", true).attr("title", "Maximum of 10 clips per project");
+    } else {
+      $btn.prop("disabled", false).removeAttr("title");
+    }
+  }
+
+  var MAX_CLIPS = 10;
+
+  /**
+   * Initialize jQuery UI Sortable on the clip list.
+   */
+  function initSortable() {
+    var $clipList = $(".js-clip-list");
+    if ($clipList.length === 0) {
+      return;
+    }
+
+    $clipList.sortable({
+      handle: ".js-drag-handle",
+      items: "> .clip-card",
+      axis: "y",
+      tolerance: "pointer",
+      placeholder: "clip-card ui-sortable-placeholder card",
+      forcePlaceholderSize: true,
+      cursor: "grabbing",
+      opacity: 0.9,
+      update: function () {
+        var clipIds = [];
+        $clipList.find(".clip-card").each(function () {
+          clipIds.push($(this).data("clip-id"));
+        });
+
+        renumberClips();
+
+        $.ajax({
+          url: "/api/projects/" + getClipProjectId() + "/clips/reorder/",
+          method: "POST",
+          contentType: "application/json",
+          headers: { "X-CSRFToken": getCsrfToken() },
+          data: JSON.stringify({ clip_ids: clipIds }),
+          success: function () {
+            if (typeof Peliku !== "undefined" && Peliku.Toast) {
+              Peliku.Toast.show("Clips reordered", "success");
+            }
+          },
+          error: function () {
+            if (typeof Peliku !== "undefined" && Peliku.Toast) {
+              Peliku.Toast.show("Failed to save clip order", "error");
+            }
+          },
+        });
+      },
+    });
+  }
+
+  /**
+   * Build a new clip card element from response data.
+   * @param {Object} clipData - Clip data with id, sequence_number, etc.
+   * @returns {jQuery} The new clip card article element.
+   */
+  function buildClipCard(clipData) {
+    var seq = clipData.sequence_number;
+    var clipId = clipData.id;
+
+    var html =
+      '<div class="clip-connector" aria-hidden="true">' +
+      '<div class="clip-connector__line"></div>' +
+      '<button type="button" class="btn btn--ghost btn--sm clip-connector__btn" disabled ' +
+      'aria-label="Generate transition frame">' +
+      '<i class="ph ph-arrows-merge" aria-hidden="true"></i> ' +
+      "Generate Transition Frame</button>" +
+      '<div class="clip-connector__line"></div></div>' +
+      '<article class="clip-card card" data-clip="' +
+      seq +
+      '" data-clip-id="' +
+      clipId +
+      '" aria-label="Clip ' +
+      seq +
+      '">' +
+      '<div class="clip-card__drag js-drag-handle" aria-label="Drag to reorder" role="img">' +
+      '<i class="ph ph-dots-six-vertical" aria-hidden="true"></i></div>' +
+      '<div class="clip-card__content">' +
+      '<div class="clip-card__left">' +
+      '<h2 class="heading-3 clip-card__heading">Clip ' +
+      seq +
+      "</h2>" +
+      '<div class="form-group">' +
+      '<label class="form-label" for="script-' +
+      seq +
+      '">Script</label>' +
+      '<textarea id="script-' +
+      seq +
+      '" class="form-textarea clip-card__script" rows="6" maxlength="2000" ' +
+      'aria-label="Script for clip ' +
+      seq +
+      '"></textarea>' +
+      '<div class="form-helper form-helper--counter">' +
+      '<span class="save-status js-save-status" aria-live="polite"></span>' +
+      '<span class="char-count" aria-live="polite">' +
+      '<span class="js-char-current">0</span>/2000</span></div></div>' +
+      '<div class="clip-card__left-actions">' +
+      '<button type="button" class="btn btn--secondary btn--sm" disabled ' +
+      'aria-label="Regenerate script for clip ' +
+      seq +
+      '">' +
+      '<i class="ph ph-arrows-clockwise" aria-hidden="true"></i> Regenerate Script</button>' +
+      '<button type="button" class="btn btn--ghost btn--sm btn--danger-text js-delete-clip" ' +
+      'aria-label="Delete clip ' +
+      seq +
+      '">' +
+      '<i class="ph ph-trash" aria-hidden="true"></i> Delete Clip</button></div></div>' +
+      '<div class="clip-card__right" data-status="idle">' +
+      '<div class="clip-card__state clip-card__state--idle">' +
+      '<div class="clip-card__video-placeholder">' +
+      '<i class="ph-duotone ph-magic-wand clip-card__wand-icon" aria-hidden="true"></i></div>' +
+      '<button type="button" class="btn btn--primary btn--md clip-card__generate-btn js-generate-video" ' +
+      'aria-label="Generate video for clip ' +
+      seq +
+      '">' +
+      '<i class="ph ph-sparkle" aria-hidden="true"></i> Generate Video</button></div>' +
+      '<div class="clip-card__state clip-card__state--generating hidden" aria-live="polite">' +
+      '<div class="clip-card__video-placeholder clip-card__video-placeholder--generating">' +
+      '<div class="clip-card__gen-pulse" aria-hidden="true"></div>' +
+      '<i class="ph-duotone ph-magic-wand clip-card__wand-icon" aria-hidden="true"></i></div>' +
+      '<p class="body-small clip-card__gen-text">' +
+      '<i class="ph ph-spinner clip-card__spinner" aria-hidden="true"></i> Generating video&hellip;</p>' +
+      '<p class="body-small clip-card__gen-timer js-gen-timer" aria-live="polite">0:00</p></div>' +
+      '<div class="clip-card__state clip-card__state--completed hidden">' +
+      '<div class="clip-card__video-placeholder">' +
+      '<i class="ph ph-check-circle clip-card__done-icon" aria-hidden="true"></i></div>' +
+      '<button type="button" class="btn btn--secondary btn--sm js-generate-video" ' +
+      'aria-label="Regenerate video for clip ' +
+      seq +
+      '">' +
+      '<i class="ph ph-arrows-clockwise" aria-hidden="true"></i> Regenerate Video</button></div>' +
+      '<div class="clip-card__state clip-card__state--failed hidden" aria-live="assertive">' +
+      '<div class="clip-card__video-placeholder clip-card__video-placeholder--failed">' +
+      '<i class="ph ph-warning-circle clip-card__error-icon" aria-hidden="true"></i></div>' +
+      '<p class="body-small clip-card__error-text js-error-text">' +
+      "We couldn\u2019t generate this video. Try adjusting the script and click Retry.</p>" +
+      '<button type="button" class="btn btn--secondary btn--sm js-generate-video" ' +
+      'aria-label="Retry">' +
+      '<i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i> Retry</button></div>' +
+      '<div class="form-group">' +
+      '<label class="form-label" for="gen-method-' +
+      seq +
+      '">Generation Method</label>' +
+      '<select id="gen-method-' +
+      seq +
+      '" class="form-select js-gen-method" aria-label="Generation method for clip ' +
+      seq +
+      '">' +
+      '<option value="text_to_video" selected>Text-to-Video</option>' +
+      '<option value="image_to_video">Image-to-Video</option>' +
+      '<option value="frame_interpolation">Frame Interpolation</option></select></div>' +
+      '<div class="first-frame-panel js-first-frame-panel hidden" data-clip-id="' +
+      clipId +
+      '">' +
+      '<span class="form-label">First Frame</span>' +
+      '<div class="first-frame-panel__preview js-first-frame-preview">' +
+      '<div class="first-frame-panel__empty">' +
+      '<i class="ph ph-image" aria-hidden="true"></i>' +
+      '<span class="body-small">No first frame set</span></div></div>' +
+      '<div class="first-frame-panel__actions">' +
+      '<button type="button" class="btn btn--secondary btn--sm js-first-frame-generate" ' +
+      'aria-label="Generate first frame">' +
+      '<i class="ph ph-sparkle" aria-hidden="true"></i> Generate Image</button>' +
+      '<label class="btn btn--secondary btn--sm js-first-frame-upload-label">' +
+      '<i class="ph ph-upload-simple" aria-hidden="true"></i> Upload Image' +
+      '<input type="file" class="visually-hidden js-first-frame-upload-input" ' +
+      'accept="image/jpeg,image/png,image/webp"></label></div></div>' +
+      '<div class="last-frame-panel js-last-frame-panel hidden" data-clip-id="' +
+      clipId +
+      '">' +
+      '<span class="form-label">Last Frame</span>' +
+      '<div class="last-frame-panel__preview js-last-frame-preview">' +
+      '<div class="last-frame-panel__empty">' +
+      '<i class="ph ph-image" aria-hidden="true"></i>' +
+      '<span class="body-small">No last frame set</span></div></div>' +
+      '<div class="last-frame-panel__actions">' +
+      '<button type="button" class="btn btn--secondary btn--sm js-last-frame-generate" ' +
+      'aria-label="Generate last frame">' +
+      '<i class="ph ph-sparkle" aria-hidden="true"></i> Generate Image</button>' +
+      '<label class="btn btn--secondary btn--sm js-last-frame-upload-label">' +
+      '<i class="ph ph-upload-simple" aria-hidden="true"></i> Upload Image' +
+      '<input type="file" class="visually-hidden js-last-frame-upload-input" ' +
+      'accept="image/jpeg,image/png,image/webp"></label>' +
+      '<button type="button" class="btn btn--ghost btn--sm js-last-frame-from-next" ' +
+      'aria-label="Use next clip first frame">' +
+      '<i class="ph ph-arrow-bend-down-right" aria-hidden="true"></i> ' +
+      "Use Next Clip's First Frame</button></div></div>" +
+      '<div class="clip-refs js-clip-refs" data-clip-id="' +
+      clipId +
+      '">' +
+      '<div class="clip-refs__header">' +
+      '<span class="form-label">References</span>' +
+      '<button type="button" class="btn btn--ghost btn--xs js-ref-select-all" ' +
+      'aria-label="Select all references">Select All</button></div>' +
+      '<div class="clip-refs__list">' +
+      '<p class="body-small clip-refs__empty">No references defined yet.</p>' +
+      "</div></div></div></div></article>";
+
+    return $(html);
+  }
+
+  /**
+   * Bind the "Add Clip" button at the bottom of the clip list.
+   */
+  function bindAddClip() {
+    $(document).on("click", ".js-add-clip", function () {
+      var $btn = $(this);
+      $btn.prop("disabled", true);
+
+      $.ajax({
+        url: "/api/projects/" + getClipProjectId() + "/clips/add/",
+        method: "POST",
+        contentType: "application/json",
+        headers: { "X-CSRFToken": getCsrfToken() },
+        success: function (data) {
+          var $newCard = buildClipCard(data.clip);
+          $(".js-clip-list .clip-add-container").before($newCard);
+          $(".js-clip-list").sortable("refresh");
+          renumberClips();
+
+          if (typeof Peliku !== "undefined" && Peliku.Toast) {
+            Peliku.Toast.show("Clip added", "success");
+          }
+          $btn.prop("disabled", false);
+          updateAddClipButton();
+        },
+        error: function (xhr) {
+          $btn.prop("disabled", false);
+          var msg = "Could not add clip.";
+          try {
+            var body = JSON.parse(xhr.responseText);
+            if (body.error) {
+              msg = body.error;
+            }
+          } catch (e) {
+            /* use default */
+          }
+          if (typeof Peliku !== "undefined" && Peliku.Toast) {
+            Peliku.Toast.show(msg, "error");
+          }
+        },
+      });
+    });
+  }
+
+  /**
+   * Bind the "Delete Clip" button per clip card.
+   */
+  function bindDeleteClip() {
+    $(document).on("click", ".js-delete-clip", function () {
+      var $card = $(this).closest(".clip-card");
+      var clipId = $card.data("clip-id");
+      var clipNum = $card.data("clip");
+
+      pendingDeleteClipId = clipId;
+
+      $(".js-confirm-title").text("Remove Clip " + clipNum);
+      $(".js-confirm-message").text(
+        "Remove Clip " +
+          clipNum +
+          "? The script and generated video will be deleted."
+      );
+      $(".js-confirm-overlay").addClass("is-active");
+      $(".js-confirm-ok").trigger("focus");
+    });
+  }
+
+  /**
+   * Bind confirm modal buttons for clip delete flow.
+   */
+  function bindDeleteConfirmModal() {
+    $(document).on("click", ".js-confirm-ok", function () {
+      if (!pendingDeleteClipId) {
+        return;
+      }
+      var clipId = pendingDeleteClipId;
+      closeDeleteModal();
+
+      $.ajax({
+        url: "/api/clips/" + clipId + "/delete/",
+        method: "POST",
+        headers: { "X-CSRFToken": getCsrfToken() },
+        contentType: "application/json",
+        success: function () {
+          var $card = $('[data-clip-id="' + clipId + '"]');
+          var $prevConnector = $card.prev(".clip-connector");
+          if ($prevConnector.length === 0) {
+            var $nextConnector = $card.next(".clip-connector");
+            $nextConnector.remove();
+          } else {
+            $prevConnector.remove();
+          }
+          $card.remove();
+
+          $(".js-clip-list").sortable("refresh");
+          renumberClips();
+
+          if (typeof Peliku !== "undefined" && Peliku.Toast) {
+            Peliku.Toast.show("Clip deleted", "success");
+          }
+        },
+        error: function (xhr) {
+          var msg = "Could not delete clip.";
+          try {
+            var body = JSON.parse(xhr.responseText);
+            if (body.error) {
+              msg = body.error;
+            }
+          } catch (e) {
+            /* use default */
+          }
+          if (typeof Peliku !== "undefined" && Peliku.Toast) {
+            Peliku.Toast.show(msg, "error");
+          }
+        },
+      });
+    });
+
+    $(document).on(
+      "click",
+      ".js-confirm-cancel, .js-confirm-close",
+      function () {
+        if (pendingDeleteClipId) {
+          closeDeleteModal();
+        }
+      }
+    );
+  }
+
+  /**
+   * Close the delete confirmation modal and reset pending state.
+   */
+  function closeDeleteModal() {
+    $(".js-confirm-overlay").removeClass("is-active");
+    pendingDeleteClipId = null;
+  }
+
+  /* ── State for delete confirmation ── */
+  var pendingDeleteClipId = null;
+
   return {
     init: function () {
       bindRefPanelToggle();
@@ -1040,6 +1427,10 @@ const Workspace = (function ($) {
       bindRefRemove();
       bindClipRefCheckboxes();
       bindRefSelectAll();
+      initSortable();
+      bindAddClip();
+      bindDeleteClip();
+      bindDeleteConfirmModal();
     },
   };
 })(jQuery);
