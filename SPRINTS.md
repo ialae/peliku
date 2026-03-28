@@ -864,7 +864,7 @@ Never run global `pip install` commands. Always activate `.venv` first, then use
   - `source .venv/Scripts/activate && python -m pytest core/tests/test_clip_management.py --tb=short -q` — tests pass
   - `source .venv/Scripts/activate && python -m pytest --tb=short -q` — full suite passes
   - `source .venv/Scripts/activate && make lint` — lint passes
-  - Add clip endpoint works: start server, seed data, `curl --fail --silent -X POST http://localhost:8000/api/projects/1/clips/add/ -H "Content-Type: application/json" -w "%{http_code}" | grep -qE "200|201"`, stop server
+  - Add clip endpoint works: start server, seed data, dynamically resolve project ID, `curl --fail --silent -X POST http://localhost:8000/api/projects/$PROJ_ID/clips/add/ -H "Content-Type: application/json" -w "%{http_code}" | grep -qE "200|201"`, stop server
 
 - **Makefile target name**: `checksprint18`
 
@@ -1622,7 +1622,8 @@ checksprint18:
 	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
 	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
-		curl --fail --silent -X POST http://localhost:8000/api/projects/1/clips/add/ \
+		PROJ_ID=$$(DJANGO_SETTINGS_MODULE=peliku.settings python -c "import django; django.setup(); from core.models import Project; print(Project.objects.first().pk)") && \
+		curl --fail --silent -X POST http://localhost:8000/api/projects/$${PROJ_ID}/clips/add/ \
 			-H "Content-Type: application/json" -w "%{http_code}" -o /dev/null | grep -qE "200|201" ; \
 		EXIT=$$? ; kill $$RF_PID 2>/dev/null ; exit $$EXIT
 
