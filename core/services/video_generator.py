@@ -625,3 +625,121 @@ def generate_frame_interpolation(clip):
             clip.project.title,
         )
         raise RuntimeError(f"Frame Interpolation generation failed: {exc}") from exc
+
+
+def generate_extend_from_previous(clip):
+    """Generate a video by extending the previous clip's video.
+
+    Uses the Veo Extension API to continue the previous clip's
+    video with the current clip's script as the extension prompt.
+    The result is a combined video that is split: the previous
+    clip keeps its original portion, and the new portion becomes
+    the current clip's video. Resolution is locked to 720p.
+
+    Args:
+        clip: A Clip model instance (must be Clip 2 or higher).
+
+    Returns:
+        dict: Result data with video_url and clip_id.
+
+    Raises:
+        ValueError: If the clip is Clip 1 or previous clip lacks a video.
+        RuntimeError: If generation or download fails.
+    """
+    if clip.sequence_number <= 1:
+        clip.generation_status = "failed"
+        clip.save(update_fields=["generation_status"])
+        raise ValueError("Extend from Previous Clip is not available for Clip 1.")
+
+    from core.models import Clip as ClipModel
+
+    previous_clip = ClipModel.objects.filter(
+        project=clip.project,
+        sequence_number=clip.sequence_number - 1,
+    ).first()
+
+    if not previous_clip:
+        clip.generation_status = "failed"
+        clip.save(update_fields=["generation_status"])
+        raise ValueError("Previous clip not found.")
+
+    if not previous_clip.video_file or not previous_clip.video_file.name:
+        clip.generation_status = "failed"
+        clip.save(update_fields=["generation_status"])
+        raise ValueError("Previous clip has no generated video.")
+
+    if not previous_clip.generation_reference_id:
+        clip.generation_status = "failed"
+        clip.save(update_fields=["generation_status"])
+        raise ValueError(
+            "Previous clip has no generation reference ID. "
+            "Regenerate the previous clip's video first."
+        )
+
+    if not clip.script_text.strip():
+        clip.generation_status = "failed"
+        clip.save(update_fields=["generation_status"])
+        raise ValueError("Clip has no script text for video generation.")
+
+    clip.generation_status = "generating"
+    clip.save(update_fields=["generation_status"])
+
+    try:
+        client = get_ai_client()
+
+        operation = client.models.generate_videos(
+            model=VEO_MODEL_QUALITY,
+            prompt=clip.script_text.strip(),
+            video=types.Video(
+                uri=previous_clip.generation_reference_id,
+            ),
+            config=types.GenerateVideosConfig(
+                number_of_videos=1,
+                resolution="720p",
+                person_generation="allow_all",
+            ),
+        )
+
+        operation = _poll_operation(client, operation)
+
+        generated_video = operation.response.generated_videos[0]
+
+        videos_dir = _ensure_videos_dir()
+        filename = f"clip_{clip.project.pk}_{clip.sequence_number}" f"_from_prev.mp4"
+        filepath = videos_dir / filename
+
+        client.files.download(file=generated_video.video)
+        generated_video.video.save(str(filepath))
+
+        relative_path = f"videos/{filename}"
+        clip.video_file = relative_path
+        clip.generation_status = "completed"
+        clip.generation_reference_id = getattr(operation, "name", "")
+        clip.save(
+            update_fields=[
+                "video_file",
+                "generation_status",
+                "generation_reference_id",
+            ]
+        )
+
+        logger.info(
+            "Extend from Previous generated for Clip %s of Project '%s'.",
+            clip.sequence_number,
+            clip.project.title,
+        )
+
+        return {
+            "clip_id": clip.pk,
+            "video_url": f"/{settings.MEDIA_URL}{relative_path}",
+        }
+
+    except Exception as exc:
+        clip.generation_status = "failed"
+        clip.save(update_fields=["generation_status"])
+        logger.exception(
+            "Extend from Previous failed for Clip %s of Project '%s'.",
+            clip.sequence_number,
+            clip.project.title,
+        )
+        raise RuntimeError(f"Extend from Previous generation failed: {exc}") from exc

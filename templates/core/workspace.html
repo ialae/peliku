@@ -342,7 +342,16 @@
                             <option value="text_to_video" {% if clip.generation_method == "text_to_video" %}selected{% endif %}>Text-to-Video</option>
                             <option value="image_to_video" {% if clip.generation_method == "image_to_video" %}selected{% endif %}>Image-to-Video</option>
                             <option value="frame_interpolation" {% if clip.generation_method == "frame_interpolation" %}selected{% endif %}>Frame Interpolation</option>
+                            <option
+                                value="extend_previous"
+                                {% if clip.generation_method == "extend_previous" %}selected{% endif %}
+                                {% if clip.sequence_number <= 1 %}disabled{% endif %}
+                            >Extend from Previous Clip</option>
                         </select>
+                        <p class="body-small clip-card__extend-prev-note js-extend-prev-note {% if clip.generation_method != 'extend_previous' %}hidden{% endif %}">
+                            <i class="ph ph-info" aria-hidden="true"></i>
+                            Resolution locked to 720p for Extend from Previous Clip
+                        </p>
                     </div>
 
                     {# ── First Frame Sub-Panel (Image-to-Video & Frame Interpolation) ── #}
