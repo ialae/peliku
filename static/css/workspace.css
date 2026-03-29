@@ -621,6 +621,48 @@
     color: var(--color-success-500);
 }
 
+/* Completed state: action buttons */
+.clip-card__completed-actions {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+/* Extend clip: info bar */
+.clip-card__extend-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    color: var(--color-text-secondary);
+}
+
+.clip-card__extend-note {
+    color: var(--color-text-disabled);
+    font-style: italic;
+}
+
+/* Extend clip: inline form */
+.clip-card__extend-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: var(--border-width) solid var(--border-color);
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface-bg);
+}
+
+.clip-card__extend-textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+.clip-card__extend-form-actions {
+    display: flex;
+    gap: var(--space-2);
+    justify-content: flex-end;
+}
+
 /* Failed state: error display */
 .clip-card__video-placeholder--failed {
     border-color: var(--color-error-500);

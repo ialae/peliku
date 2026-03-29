@@ -20,6 +20,7 @@ from core.services.script_generator import (
 )
 from core.services.task_runner import run_in_background
 from core.services.transition_generator import generate_transition_frames
+from core.services.video_extender import MAX_EXTENSIONS, extend_clip_video
 from core.services.video_generator import (
     generate_first_frame_image,
     generate_frame_interpolation,
@@ -1305,6 +1306,76 @@ def api_generate_transition(request, clip_id):
         clip_above,
         clip_below,
         related_object_id=clip_above.pk,
+        related_object_type="clip",
+    )
+
+    return JsonResponse({"task_id": task_id}, status=202)
+
+
+# ── Video Extension ──────────────────────────────────────────────────────────
+
+
+@csrf_exempt
+@require_POST
+def api_extend_clip(request, clip_id):
+    """Extend a clip's video by 7 seconds using the Veo Extension API.
+
+    POST /api/clips/<id>/extend/
+    Body JSON: {"prompt": "What happens next..."}
+
+    Validates that the clip has a completed video, a valid generation
+    reference, and has not exceeded the maximum extension limit.
+    Creates a background task and returns the task ID.
+
+    Returns JSON {"task_id": <int>} with HTTP 202 on success.
+    """
+    clip = get_object_or_404(Clip, pk=clip_id)
+
+    if clip.generation_status == "generating":
+        return JsonResponse(
+            {"error": "Video generation is already in progress."},
+            status=409,
+        )
+
+    if not clip.video_file or not clip.video_file.name:
+        return JsonResponse(
+            {"error": "Clip has no generated video to extend."},
+            status=400,
+        )
+
+    if not clip.generation_reference_id:
+        return JsonResponse(
+            {
+                "error": "Video reference expired or unavailable. "
+                "Regenerate the video first."
+            },
+            status=400,
+        )
+
+    if clip.extension_count >= MAX_EXTENSIONS:
+        return JsonResponse(
+            {"error": f"Maximum extension limit reached ({MAX_EXTENSIONS})."},
+            status=400,
+        )
+
+    try:
+        body = json.loads(request.body) if request.body else {}
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid JSON."}, status=400)
+
+    prompt = body.get("prompt", "").strip()
+    if not prompt:
+        return JsonResponse(
+            {"error": "Extension prompt is required."},
+            status=400,
+        )
+
+    task_id = run_in_background(
+        "video_extension",
+        extend_clip_video,
+        clip,
+        prompt,
+        related_object_id=clip.pk,
         related_object_type="clip",
     )
 

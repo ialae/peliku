@@ -294,6 +294,172 @@ const Workspace = (function ($) {
     }
   }
 
+  /* ── Extend Clip ── */
+
+  /** Maximum number of extensions per clip. */
+  var MAX_EXTENSIONS = 20;
+
+  /**
+   * Handle successful video extension: update video player and extension count.
+   * @param {jQuery} $card  - The .clip-card article element.
+   * @param {jQuery} $right - The .clip-card__right element.
+   * @param {number} clipNum - The clip sequence number.
+   * @param {Object} taskData - Task result data from the poller.
+   */
+  function handleExtensionComplete($card, $right, clipNum, taskData) {
+    var videoUrl = "";
+    var extensionCount = 0;
+
+    if (taskData.result_data) {
+      if (taskData.result_data.video_url) {
+        videoUrl = taskData.result_data.video_url;
+      }
+      if (typeof taskData.result_data.extension_count === "number") {
+        extensionCount = taskData.result_data.extension_count;
+      }
+    }
+
+    var $completed = $right.find(".clip-card__state--completed");
+
+    if (videoUrl) {
+      var $existing = $completed.find(".js-clip-video");
+      if ($existing.length) {
+        $existing.attr("src", videoUrl);
+      } else {
+        $completed.find(".clip-card__video-placeholder").remove();
+        var $video = $(
+          '<video class="clip-card__video js-clip-video" muted autoplay loop playsinline></video>'
+        );
+        $video.attr("src", videoUrl);
+        $video.attr("aria-label", "Generated video for clip " + clipNum);
+        $completed
+          .find(".clip-card__completed-actions")
+          .before($video);
+      }
+    }
+
+    $card.find(".js-extension-count").text(
+      "Extended " + extensionCount + "/" + MAX_EXTENSIONS + " times"
+    );
+
+    if (extensionCount >= MAX_EXTENSIONS) {
+      $card.find(".js-extend-clip-toggle")
+        .prop("disabled", true)
+        .attr("title", "Maximum extension limit reached");
+    }
+
+    $card.find(".js-extend-form").addClass("hidden");
+    $card.find(".js-extend-prompt").val("");
+
+    showState($right, "completed");
+
+    if (typeof Peliku !== "undefined" && Peliku.Toast) {
+      Peliku.Toast.show(
+        "Clip " + clipNum + " extended successfully",
+        "success"
+      );
+    }
+  }
+
+  /**
+   * Trigger a video extension for a clip.
+   * @param {jQuery} $card - The .clip-card article element.
+   * @param {string} prompt - The extension prompt text.
+   */
+  function extendClipVideo($card, prompt) {
+    var clipId = $card.data("clip-id");
+    var clipNum = $card.data("clip");
+    var $right = $card.find(".clip-card__right");
+
+    showState($right, "generating");
+    startGenTimer($right, clipId);
+
+    $.ajax({
+      url: "/api/clips/" + clipId + "/extend/",
+      method: "POST",
+      contentType: "application/json",
+      headers: { "X-CSRFToken": getCsrfToken() },
+      data: JSON.stringify({ prompt: prompt }),
+      success: function (data) {
+        TaskPoller.pollTask(data.task_id, {
+          onProgress: function () {
+            /* Timer is already running */
+          },
+          onComplete: function (taskData) {
+            stopGenTimer(clipId);
+            handleExtensionComplete($card, $right, clipNum, taskData);
+          },
+          onError: function (taskData) {
+            stopGenTimer(clipId);
+            handleGenerationFailed($right, taskData);
+          },
+        });
+      },
+      error: function (xhr) {
+        stopGenTimer(clipId);
+        var msg = "Could not start video extension.";
+        try {
+          var body = JSON.parse(xhr.responseText);
+          if (body.error) {
+            msg = body.error;
+          }
+        } catch (e) {
+          /* use default message */
+        }
+        showState($right, "completed");
+        if (typeof Peliku !== "undefined" && Peliku.Toast) {
+          Peliku.Toast.show(msg, "error");
+        }
+      },
+    });
+  }
+
+  /**
+   * Bind click handler on the "Extend Clip" toggle button.
+   * Shows/hides the inline extension prompt form.
+   */
+  function bindExtendClipToggle() {
+    $(document).on("click", ".js-extend-clip-toggle", function () {
+      var $card = $(this).closest(".clip-card");
+      var $form = $card.find(".js-extend-form");
+      $form.toggleClass("hidden");
+      if (!$form.hasClass("hidden")) {
+        $form.find(".js-extend-prompt").trigger("focus");
+      }
+    });
+  }
+
+  /**
+   * Bind click handler on the "Confirm" button in the extension form.
+   * Validates the prompt and starts the extension.
+   */
+  function bindExtendConfirm() {
+    $(document).on("click", ".js-extend-confirm", function () {
+      var $card = $(this).closest(".clip-card");
+      var $prompt = $card.find(".js-extend-prompt");
+      var prompt = $.trim($prompt.val());
+
+      if (!prompt) {
+        $prompt.trigger("focus");
+        return;
+      }
+
+      extendClipVideo($card, prompt);
+    });
+  }
+
+  /**
+   * Bind click handler on the "Cancel" button in the extension form.
+   * Hides the form and clears the prompt.
+   */
+  function bindExtendCancel() {
+    $(document).on("click", ".js-extend-cancel", function () {
+      var $card = $(this).closest(".clip-card");
+      $card.find(".js-extend-form").addClass("hidden");
+      $card.find(".js-extend-prompt").val("");
+    });
+  }
+
   /**
    * Bind click handlers for all Generate Video / Regenerate / Retry buttons.
    */
@@ -1197,11 +1363,38 @@ const Workspace = (function ($) {
       '<div class="clip-card__state clip-card__state--completed hidden">' +
       '<div class="clip-card__video-placeholder">' +
       '<i class="ph ph-check-circle clip-card__done-icon" aria-hidden="true"></i></div>' +
+      '<div class="clip-card__completed-actions">' +
       '<button type="button" class="btn btn--secondary btn--sm js-generate-video" ' +
       'aria-label="Regenerate video for clip ' +
       seq +
       '">' +
-      '<i class="ph ph-arrows-clockwise" aria-hidden="true"></i> Regenerate Video</button></div>' +
+      '<i class="ph ph-arrows-clockwise" aria-hidden="true"></i> Regenerate Video</button>' +
+      '<button type="button" class="btn btn--secondary btn--sm js-extend-clip-toggle" ' +
+      'aria-label="Extend video for clip ' +
+      seq +
+      '">' +
+      '<i class="ph ph-plus-circle" aria-hidden="true"></i> Extend Clip</button></div>' +
+      '<div class="clip-card__extend-info body-small">' +
+      '<span class="js-extension-count">Extended 0/20 times</span>' +
+      '<span class="clip-card__extend-note">Extensions are generated at 720p</span></div>' +
+      '<div class="clip-card__extend-form js-extend-form hidden" aria-label="Extension prompt form">' +
+      '<label class="form-label" for="extend-prompt-' +
+      seq +
+      '">What happens next?</label>' +
+      '<textarea id="extend-prompt-' +
+      seq +
+      '" class="form-textarea clip-card__extend-textarea js-extend-prompt" ' +
+      'rows="3" maxlength="2000" placeholder="Describe what happens in the extended portion..." ' +
+      'aria-label="Extension prompt for clip ' +
+      seq +
+      '"></textarea>' +
+      '<div class="clip-card__extend-form-actions">' +
+      '<button type="button" class="btn btn--primary btn--sm js-extend-confirm" ' +
+      'aria-label="Confirm extension for clip ' +
+      seq +
+      '">Confirm</button>' +
+      '<button type="button" class="btn btn--ghost btn--sm js-extend-cancel" ' +
+      'aria-label="Cancel extension">Cancel</button></div></div></div>' +
       '<div class="clip-card__state clip-card__state--failed hidden" aria-live="assertive">' +
       '<div class="clip-card__video-placeholder clip-card__video-placeholder--failed">' +
       '<i class="ph ph-warning-circle clip-card__error-icon" aria-hidden="true"></i></div>' +
@@ -1679,6 +1872,9 @@ const Workspace = (function ($) {
       bindScriptCharCount();
       bindAutoSave();
       bindGenerateVideo();
+      bindExtendClipToggle();
+      bindExtendConfirm();
+      bindExtendCancel();
       bindGenMethodChange();
       bindFirstFrameGenerate();
       bindFirstFrameUpload();
