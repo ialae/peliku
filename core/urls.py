@@ -114,4 +114,9 @@ urlpatterns = [
         views.api_extend_clip,
         name="api_extend_clip",
     ),
+    path(
+        "api/projects/<int:project_id>/preview-data/",
+        views.api_preview_data,
+        name="api_preview_data",
+    ),
 ]

@@ -11,7 +11,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from core.forms import ProjectForm
-from core.models import Clip, Project, ReferenceImage, Task, UserSettings
+from core.models import Clip, Hook, Project, ReferenceImage, Task, UserSettings
 from core.services.image_generator import generate_reference_image
 from core.services.script_generator import (
     generate_all_scripts,
@@ -1410,3 +1410,72 @@ def api_extend_clip(request, clip_id):
     )
 
     return JsonResponse({"task_id": task_id}, status=202)
+
+
+# ── Reel Preview ─────────────────────────────────────────────────────────────
+
+
+def api_preview_data(request, project_id):
+    """Return clip video URLs and durations for reel preview.
+
+    GET /api/projects/<id>/preview-data/
+
+    Returns JSON:
+        {
+            "clips": [
+                {
+                    "id": <int>,
+                    "sequence_number": <int>,
+                    "video_url": <str|null>,
+                    "duration": <int>
+                },
+                ...
+            ],
+            "hook": {
+                "video_url": <str|null>,
+                "is_enabled": <bool>,
+                "duration": 4
+            } | null,
+            "aspect_ratio": <str>
+        }
+    """
+    project = get_object_or_404(Project, pk=project_id)
+    clips = project.clips.all().order_by("sequence_number")
+
+    clip_data = []
+    for clip in clips:
+        video_url = None
+        if clip.video_file and clip.video_file.name:
+            video_url = clip.video_file.url
+        clip_data.append(
+            {
+                "id": clip.pk,
+                "sequence_number": clip.sequence_number,
+                "video_url": video_url,
+                "duration": project.clip_duration,
+            }
+        )
+
+    hook_data = None
+    try:
+        hook = project.hook
+        hook_video_url = None
+        if hook.video_file and hook.video_file.name:
+            hook_video_url = hook.video_file.url
+        hook_data = {
+            "video_url": hook_video_url,
+            "is_enabled": hook.is_enabled,
+            "duration": 4,
+        }
+    except project.DoesNotExist:
+        pass
+    except Hook.DoesNotExist:
+        pass
+
+    return JsonResponse(
+        {
+            "clips": clip_data,
+            "hook": hook_data,
+            "aspect_ratio": project.aspect_ratio,
+        }
+    )

@@ -1055,7 +1055,7 @@ Never run global `pip install` commands. Always activate `.venv` first, then use
   - `source .venv/Scripts/activate && python -m pytest core/tests/test_preview.py --tb=short -q` — tests pass
   - `source .venv/Scripts/activate && python -m pytest --tb=short -q` — full suite passes
   - `source .venv/Scripts/activate && make lint` — lint passes
-  - Preview data endpoint responds: start server, seed data, `curl --fail --silent http://localhost:8000/api/projects/1/preview-data/ -w "%{http_code}" | grep -qE "200"`, stop server
+  - Preview data endpoint responds: start server, seed data, dynamically determine first project PK, `curl --fail --silent http://localhost:8000/api/projects/<PK>/preview-data/ -w "%{http_code}" | grep -qE "200"`, stop server
 
 - **Makefile target name**: `checksprint23`
 
@@ -1684,8 +1684,9 @@ checksprint23:
 	$(ACTIVATE) && python -m pytest --tb=short -q
 	$(ACTIVATE) && make lint
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
-	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
-		curl --fail --silent http://localhost:8000/api/projects/1/preview-data/ \
+	@PROJ_ID=$$($(ACTIVATE) && python -c "import django,os;os.environ.setdefault('DJANGO_SETTINGS_MODULE','peliku.settings');django.setup();from core.models import Project;print(Project.objects.first().pk)"); \
+		$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$!; sleep 3; \
+		curl --fail --silent http://localhost:8000/api/projects/$$PROJ_ID/preview-data/ \
 			-w "%{http_code}" -o /dev/null | grep -qE "200" ; \
 		EXIT=$$? ; kill $$RF_PID 2>/dev/null ; exit $$EXIT
 

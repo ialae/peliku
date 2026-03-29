@@ -221,8 +221,9 @@ checksprint22:
 
 checksprint23:
 	$(ACTIVATE) && python manage.py seed_dev_data 2>/dev/null || true
-	@$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$! && sleep 3 && \
-		curl --fail --silent http://localhost:8000/api/projects/1/preview-data/ \
+	@PROJ_ID=$$($(ACTIVATE) && python -c "import django,os;os.environ.setdefault('DJANGO_SETTINGS_MODULE','peliku.settings');django.setup();from core.models import Project;print(Project.objects.first().pk)"); \
+		$(ACTIVATE) && python manage.py runserver 8000 > /dev/null 2>&1 & RF_PID=$$!; sleep 3; \
+		curl --fail --silent http://localhost:8000/api/projects/$$PROJ_ID/preview-data/ \
 			-w "%{http_code}" -o /dev/null | grep -qE "200" ; \
 		EXIT=$$? ; kill $$RF_PID 2>/dev/null ; exit $$EXIT
 
