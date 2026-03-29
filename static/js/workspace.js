@@ -804,6 +804,7 @@ const Workspace = (function ($) {
 
       var $firstFramePanel = $card.find(".js-first-frame-panel");
       var $lastFramePanel = $card.find(".js-last-frame-panel");
+      var $extendPrevNote = $card.find(".js-extend-prev-note");
 
       if (method === "image_to_video") {
         $firstFramePanel.removeClass("hidden");
@@ -814,6 +815,12 @@ const Workspace = (function ($) {
       } else {
         $firstFramePanel.addClass("hidden");
         $lastFramePanel.addClass("hidden");
+      }
+
+      if (method === "extend_previous") {
+        $extendPrevNote.removeClass("hidden");
+      } else {
+        $extendPrevNote.addClass("hidden");
       }
 
       $.ajax({
@@ -1220,6 +1227,16 @@ const Workspace = (function ($) {
       $card
         .find(".form-label[for^='gen-method-']")
         .attr("for", "gen-method-" + newNum);
+
+      var $extendOption = $method.find('option[value="extend_previous"]');
+      if (newNum <= 1) {
+        $extendOption.prop("disabled", true);
+        if ($method.val() === "extend_previous") {
+          $method.val("text_to_video").trigger("change");
+        }
+      } else {
+        $extendOption.prop("disabled", false);
+      }
     });
     updateAddClipButton();
   }
@@ -1414,7 +1431,13 @@ const Workspace = (function ($) {
       '">' +
       '<option value="text_to_video" selected>Text-to-Video</option>' +
       '<option value="image_to_video">Image-to-Video</option>' +
-      '<option value="frame_interpolation">Frame Interpolation</option></select></div>' +
+      '<option value="frame_interpolation">Frame Interpolation</option>' +
+      '<option value="extend_previous"' +
+      (seq <= 1 ? " disabled" : "") +
+      '>Extend from Previous Clip</option></select>' +
+      '<p class="body-small clip-card__extend-prev-note js-extend-prev-note hidden">' +
+      '<i class="ph ph-info" aria-hidden="true"></i> ' +
+      'Resolution locked to 720p for Extend from Previous Clip</p></div>' +
       '<div class="first-frame-panel js-first-frame-panel hidden" data-clip-id="' +
       clipId +
       '">' +

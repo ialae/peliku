@@ -22,6 +22,7 @@ from core.services.task_runner import run_in_background
 from core.services.transition_generator import generate_transition_frames
 from core.services.video_extender import MAX_EXTENSIONS, extend_clip_video
 from core.services.video_generator import (
+    generate_extend_from_previous,
     generate_first_frame_image,
     generate_frame_interpolation,
     generate_image_to_video,
@@ -442,6 +443,34 @@ def api_generate_video(request, clip_id):
                 status=400,
             )
 
+    if method == "extend_previous":
+        if clip.sequence_number <= 1:
+            return JsonResponse(
+                {"error": "Extend from Previous Clip is not available for Clip 1."},
+                status=400,
+            )
+        previous_clip = Clip.objects.filter(
+            project=clip.project,
+            sequence_number=clip.sequence_number - 1,
+        ).first()
+        if (
+            not previous_clip
+            or not previous_clip.video_file
+            or not previous_clip.video_file.name
+        ):
+            return JsonResponse(
+                {"error": "Previous clip has no generated video."},
+                status=400,
+            )
+        if not previous_clip.generation_reference_id:
+            return JsonResponse(
+                {
+                    "error": "Previous clip has no generation reference. "
+                    "Regenerate the previous clip's video first."
+                },
+                status=400,
+            )
+
     task_id = run_in_background(
         "video_generation",
         generator_func,
@@ -457,6 +486,7 @@ VALID_GENERATION_METHODS = {
     "text_to_video": generate_text_to_video,
     "image_to_video": generate_image_to_video,
     "frame_interpolation": generate_frame_interpolation,
+    "extend_previous": generate_extend_from_previous,
 }
 
 
