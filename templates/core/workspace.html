@@ -245,7 +245,7 @@
                         <p class="body-small clip-card__gen-timer js-gen-timer" aria-live="polite">0:00</p>
                     </div>
 
-                    {# Completed state: video player + regenerate #}
+                    {# Completed state: video player + regenerate + extend #}
                     <div class="clip-card__state clip-card__state--completed {% if clip.generation_status != 'completed' %}hidden{% endif %}">
                         {% if clip.video_file %}
                         <video
@@ -262,14 +262,56 @@
                              <i class="ph ph-check-circle clip-card__done-icon" aria-hidden="true"></i>
                         </div>
                         {% endif %}
-                        <button
-                            type="button"
-                            class="btn btn--secondary btn--sm js-generate-video"
-                            aria-label="Regenerate video for clip {{ clip.sequence_number }}"
-                        >
-                            <i class="ph ph-arrows-clockwise" aria-hidden="true"></i>
-                            Regenerate Video
-                        </button>
+                        <div class="clip-card__completed-actions">
+                            <button
+                                type="button"
+                                class="btn btn--secondary btn--sm js-generate-video"
+                                aria-label="Regenerate video for clip {{ clip.sequence_number }}"
+                            >
+                                <i class="ph ph-arrows-clockwise" aria-hidden="true"></i>
+                                Regenerate Video
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn--secondary btn--sm js-extend-clip-toggle"
+                                {% if clip.extension_count >= 20 %}disabled title="Maximum extension limit reached"{% endif %}
+                                aria-label="Extend video for clip {{ clip.sequence_number }}"
+                            >
+                                <i class="ph ph-plus-circle" aria-hidden="true"></i>
+                                Extend Clip
+                            </button>
+                        </div>
+                        <div class="clip-card__extend-info body-small">
+                            <span class="js-extension-count">Extended {{ clip.extension_count }}/20 times</span>
+                            <span class="clip-card__extend-note">Extensions are generated at 720p</span>
+                        </div>
+                        <div class="clip-card__extend-form js-extend-form hidden" aria-label="Extension prompt form">
+                            <label class="form-label" for="extend-prompt-{{ clip.sequence_number }}">What happens next?</label>
+                            <textarea
+                                id="extend-prompt-{{ clip.sequence_number }}"
+                                class="form-textarea clip-card__extend-textarea js-extend-prompt"
+                                rows="3"
+                                maxlength="2000"
+                                placeholder="Describe what happens in the extended portion..."
+                                aria-label="Extension prompt for clip {{ clip.sequence_number }}"
+                            ></textarea>
+                            <div class="clip-card__extend-form-actions">
+                                <button
+                                    type="button"
+                                    class="btn btn--primary btn--sm js-extend-confirm"
+                                    aria-label="Confirm extension for clip {{ clip.sequence_number }}"
+                                >
+                                    Confirm
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn btn--ghost btn--sm js-extend-cancel"
+                                    aria-label="Cancel extension"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     {# Failed state: error + retry #}
