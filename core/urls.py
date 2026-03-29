@@ -109,4 +109,9 @@ urlpatterns = [
         views.api_generate_transition,
         name="api_generate_transition",
     ),
+    path(
+        "api/clips/<int:clip_id>/extend/",
+        views.api_extend_clip,
+        name="api_extend_clip",
+    ),
 ]
