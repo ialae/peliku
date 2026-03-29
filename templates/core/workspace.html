@@ -137,17 +137,27 @@
         {% for clip in clips %}
         {# Connector line above clip (except the first one) #}
         {% if not forloop.first %}
-        <div class="clip-connector" aria-hidden="true">
+        <div class="clip-connector" aria-hidden="true" data-clip-below-id="{{ clip.pk }}">
             <div class="clip-connector__line"></div>
+            {% if clip.first_frame %}
             <button
                 type="button"
-                class="btn btn--ghost btn--sm clip-connector__btn"
-                disabled
+                class="btn btn--sm clip-connector__btn clip-connector__btn--done js-generate-transition"
+                aria-label="Transition frames generated between clip {{ forloop.counter|add:"-1" }} and clip {{ forloop.counter }}"
+            >
+                <i class="ph ph-check-circle" aria-hidden="true"></i>
+                Transition Ready
+            </button>
+            {% else %}
+            <button
+                type="button"
+                class="btn btn--ghost btn--sm clip-connector__btn js-generate-transition"
                 aria-label="Generate transition frame between clip {{ forloop.counter|add:"-1" }} and clip {{ forloop.counter }}"
             >
                 <i class="ph ph-arrows-merge" aria-hidden="true"></i>
                 Generate Transition Frame
             </button>
+            {% endif %}
             <div class="clip-connector__line"></div>
         </div>
         {% endif %}

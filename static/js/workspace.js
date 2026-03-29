@@ -1130,9 +1130,11 @@ const Workspace = (function ($) {
     var clipId = clipData.id;
 
     var html =
-      '<div class="clip-connector" aria-hidden="true">' +
+      '<div class="clip-connector" aria-hidden="true" data-clip-below-id="' +
+      clipId +
+      '">' +
       '<div class="clip-connector__line"></div>' +
-      '<button type="button" class="btn btn--ghost btn--sm clip-connector__btn" disabled ' +
+      '<button type="button" class="btn btn--ghost btn--sm clip-connector__btn js-generate-transition" ' +
       'aria-label="Generate transition frame">' +
       '<i class="ph ph-arrows-merge" aria-hidden="true"></i> ' +
       "Generate Transition Frame</button>" +
@@ -1565,6 +1567,112 @@ const Workspace = (function ($) {
     });
   }
 
+  /* ── Transition Frame Generation ── */
+
+  /**
+   * Find the upper clip ID for a connector element.
+   * The connector sits between two clip-cards; the upper clip is
+   * the closest preceding .clip-card sibling.
+   * @param {jQuery} $connector - The .clip-connector element.
+   * @returns {number|null} The upper clip's data-clip-id, or null.
+   */
+  function getUpperClipId($connector) {
+    var $prevCard = $connector.prev(".clip-card");
+    if ($prevCard.length) {
+      return $prevCard.data("clip-id");
+    }
+    return null;
+  }
+
+  /**
+   * Generate transition frames for the connector between two clips.
+   * POSTs to /api/clips/<upper_id>/generate-transition/, polls for
+   * task completion, then updates the connector UI.
+   * @param {jQuery} $connector - The .clip-connector element.
+   */
+  function generateTransition($connector) {
+    var upperClipId = getUpperClipId($connector);
+    if (!upperClipId) {
+      return;
+    }
+
+    var $btn = $connector.find(".js-generate-transition");
+    $btn
+      .prop("disabled", true)
+      .addClass("clip-connector__btn--generating")
+      .html(
+        '<i class="ph ph-spinner clip-card__spinner" aria-hidden="true"></i> Generating\u2026'
+      );
+
+    $.ajax({
+      url: "/api/clips/" + upperClipId + "/generate-transition/",
+      method: "POST",
+      contentType: "application/json",
+      headers: { "X-CSRFToken": getCsrfToken() },
+      success: function (data) {
+        if (data.task_id && typeof Peliku !== "undefined" && Peliku.TaskPoller) {
+          Peliku.TaskPoller.poll(data.task_id, function (result) {
+            markTransitionDone($connector);
+            if (typeof Peliku !== "undefined" && Peliku.Toast) {
+              Peliku.Toast.show("Transition frames generated", "success");
+            }
+          });
+        } else {
+          markTransitionDone($connector);
+        }
+      },
+      error: function (xhr) {
+        $btn
+          .prop("disabled", false)
+          .removeClass("clip-connector__btn--generating")
+          .html(
+            '<i class="ph ph-arrows-merge" aria-hidden="true"></i> Generate Transition Frame'
+          );
+        var msg = "Transition generation failed.";
+        try {
+          var body = JSON.parse(xhr.responseText);
+          if (body.error) {
+            msg = body.error;
+          }
+        } catch (e) {
+          /* use default */
+        }
+        if (typeof Peliku !== "undefined" && Peliku.Toast) {
+          Peliku.Toast.show(msg, "error");
+        }
+      },
+    });
+  }
+
+  /**
+   * Update a connector button to show the "done" state — solid cyan
+   * circle with checkmark icon.
+   * @param {jQuery} $connector - The .clip-connector element.
+   */
+  function markTransitionDone($connector) {
+    var $btn = $connector.find(".js-generate-transition");
+    $btn
+      .prop("disabled", false)
+      .removeClass("btn--ghost clip-connector__btn--generating")
+      .addClass("clip-connector__btn--done")
+      .html(
+        '<i class="ph ph-check-circle" aria-hidden="true"></i> Transition Ready'
+      );
+  }
+
+  /**
+   * Bind click handler on transition frame buttons.
+   */
+  function bindGenerateTransition() {
+    $(document).on("click", ".js-generate-transition", function () {
+      var $connector = $(this).closest(".clip-connector");
+      if ($connector.find(".clip-connector__btn--done").length) {
+        return;
+      }
+      generateTransition($connector);
+    });
+  }
+
   return {
     init: function () {
       bindRefPanelToggle();
@@ -1589,6 +1697,7 @@ const Workspace = (function ($) {
       bindDeleteConfirmModal();
       bindRegenerateScript();
       bindRegenerateAllScripts();
+      bindGenerateTransition();
     },
   };
 })(jQuery);

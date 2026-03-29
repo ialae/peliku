@@ -438,6 +438,19 @@
     color: var(--color-accent-300);
 }
 
+.clip-connector__btn--done {
+    color: var(--color-accent-500);
+    background-color: var(--color-accent-950);
+    border-color: var(--color-accent-500);
+    cursor: default;
+    pointer-events: none;
+}
+
+.clip-connector__btn--generating {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
 /* ─── Clip Card ───────────────────────────────────────────── */
 
 .clip-card {

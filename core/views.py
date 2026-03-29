@@ -19,6 +19,7 @@ from core.services.script_generator import (
     regenerate_single_script,
 )
 from core.services.task_runner import run_in_background
+from core.services.transition_generator import generate_transition_frames
 from core.services.video_generator import (
     generate_first_frame_image,
     generate_frame_interpolation,
@@ -1266,3 +1267,45 @@ def api_regenerate_all_scripts(request, project_id):
             "scripts": scripts_response,
         }
     )
+
+
+# ── Transition Frames ────────────────────────────────────────────────────────
+
+
+@csrf_exempt
+@require_POST
+def api_generate_transition(request, clip_id):
+    """Start background transition frame generation between two clips.
+
+    POST /api/clips/<id>/generate-transition/
+
+    The *clip_id* identifies the upper clip. The endpoint validates that
+    a consecutive lower clip exists, then launches a background task to
+    generate an ending frame for the upper clip and a starting frame for
+    the lower clip.
+
+    Returns JSON {"task_id": <int>} with HTTP 202 on success.
+    """
+    clip_above = get_object_or_404(Clip, pk=clip_id)
+    project = clip_above.project
+
+    clip_below = project.clips.filter(
+        sequence_number=clip_above.sequence_number + 1,
+    ).first()
+
+    if clip_below is None:
+        return JsonResponse(
+            {"error": "No next clip exists for this transition."},
+            status=400,
+        )
+
+    task_id = run_in_background(
+        "transition_frames",
+        generate_transition_frames,
+        clip_above,
+        clip_below,
+        related_object_id=clip_above.pk,
+        related_object_type="clip",
+    )
+
+    return JsonResponse({"task_id": task_id}, status=202)
