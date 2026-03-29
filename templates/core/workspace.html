@@ -8,7 +8,7 @@
     <i class="ph ph-arrows-clockwise" aria-hidden="true"></i>
     Regenerate All Scripts
 </button>
-<button type="button" class="btn btn--ghost btn--md js-preview-toggle" disabled aria-label="Preview reel">
+<button type="button" class="btn btn--ghost btn--md js-preview-toggle" aria-label="Preview reel">
     <i class="ph ph-play-circle" aria-hidden="true"></i>
     Preview Reel
 </button>
@@ -508,6 +508,7 @@
 {% block extra_js %}
 <script src="{% static 'js/task_poller.js' %}"></script>
 <script src="{% static 'js/workspace.js' %}"></script>
+<script src="{% static 'js/preview.js' %}"></script>
 {% endblock %}
 
 {% block overlay %}

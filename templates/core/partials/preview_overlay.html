@@ -1,4 +1,4 @@
-{# Preview overlay shell — DESIGN.md §7.4, §12.4 #}
+{# Preview overlay — DESIGN.md §7.4, §12.4 #}
 <div
     class="preview-overlay js-preview-overlay"
     aria-label="Reel preview"
@@ -17,38 +17,44 @@
             <i class="ph ph-x" aria-hidden="true" style="font-size: 24px;"></i>
         </button>
 
-        {# Video player placeholder #}
+        {# Video player #}
         <div class="preview-overlay__player">
-            <div class="preview-overlay__video-placeholder">
+            <video
+                class="preview-overlay__video js-preview-video hidden"
+                playsinline
+                aria-label="Reel preview video"
+            ></video>
+            <div class="preview-overlay__video-placeholder js-preview-placeholder">
                 <i class="ph-duotone ph-play-circle preview-overlay__play-icon" aria-hidden="true"></i>
                 <p class="body-small preview-overlay__hint">Generate clips to preview your reel.</p>
             </div>
         </div>
 
-        {# Timeline scrubber #}
-        <div class="preview-overlay__timeline" aria-label="Timeline scrubber">
+        {# Time display #}
+        <div class="preview-overlay__time body-small" aria-live="polite">
+            <span class="js-preview-current-time">0:00</span>
+            <span>/</span>
+            <span class="js-preview-total-time">0:00</span>
+        </div>
+
+        {# Timeline scrubber bar #}
+        <div class="preview-overlay__timeline js-preview-timeline" aria-label="Timeline scrubber">
             <div class="preview-overlay__scrubber">
-                <div class="preview-overlay__scrubber-track">
-                    <div class="preview-overlay__scrubber-marker" style="left: 0%;" aria-hidden="true"></div>
-                    <div class="preview-overlay__scrubber-marker" style="left: 14.3%;" aria-hidden="true"></div>
-                    <div class="preview-overlay__scrubber-marker" style="left: 28.6%;" aria-hidden="true"></div>
-                    <div class="preview-overlay__scrubber-marker" style="left: 42.9%;" aria-hidden="true"></div>
-                    <div class="preview-overlay__scrubber-marker" style="left: 57.1%;" aria-hidden="true"></div>
-                    <div class="preview-overlay__scrubber-marker" style="left: 71.4%;" aria-hidden="true"></div>
-                    <div class="preview-overlay__scrubber-marker" style="left: 85.7%;" aria-hidden="true"></div>
+                <div class="preview-overlay__scrubber-track js-preview-scrubber-track">
+                    <div class="preview-overlay__scrubber-progress js-preview-progress" aria-hidden="true"></div>
                 </div>
             </div>
         </div>
 
         {# Playback controls #}
         <div class="preview-overlay__controls">
-            <button type="button" class="btn btn--ghost btn--sm" disabled aria-label="Restart playback">
+            <button type="button" class="btn btn--ghost btn--sm js-preview-restart" aria-label="Restart playback">
                 <i class="ph ph-skip-back" aria-hidden="true"></i>
             </button>
-            <button type="button" class="btn btn--primary btn--md" disabled aria-label="Play">
+            <button type="button" class="btn btn--primary btn--md js-preview-play" aria-label="Play">
                 <i class="ph ph-play" aria-hidden="true"></i>
             </button>
-            <button type="button" class="btn btn--ghost btn--sm" disabled aria-label="Pause playback">
+            <button type="button" class="btn btn--ghost btn--sm js-preview-pause hidden" aria-label="Pause playback">
                 <i class="ph ph-pause" aria-hidden="true"></i>
             </button>
         </div>
